@@ -107,9 +107,8 @@ export function ExerciseCard({ exercise, name, unit, previous, mode, onChange, o
       )}
 
       <div className="space-y-1">
-        <div className={live ? 'grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(3.25rem,4.5rem)_minmax(2.75rem,3.75rem)_2.75rem] gap-1.5 px-1 text-xs font-medium text-muted-foreground' : 'grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(3.25rem,4.5rem)_minmax(2.75rem,3.75rem)] gap-1.5 px-1 text-xs font-medium text-muted-foreground'}>
+        <div className={live ? 'grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] gap-1.5 px-1 text-xs font-medium text-muted-foreground' : 'grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)] gap-1.5 px-1 text-xs font-medium text-muted-foreground'}>
           <span className="text-center">Set</span>
-          <span className="truncate" title="Last session">Last</span>
           <span className="text-center">{weightLabel(unit)}</span>
           <span className="text-center">Reps</span>
           {live && <span />}

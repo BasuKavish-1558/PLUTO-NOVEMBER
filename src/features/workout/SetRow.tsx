@@ -44,7 +44,9 @@ export function SetRow({ set, label, previous, unit, showCheck, onPatch, onToggl
     if (parseReps(reps) !== set.reps) setReps(set.reps === null ? '' : String(set.reps))
   }
   const done = showCheck && set.done
-  const prevText = previous ? `${previous.weightKg ? toDisplayWeight(previous.weightKg, unit) : 'BW'} × ${previous.reps}` : '—'
+  // Last session's numbers show as placeholders in empty boxes (no separate column).
+  const weightHint = previous?.weightKg ? String(toDisplayWeight(previous.weightKg, unit)) : weightLabel(unit)
+  const repsHint = previous ? String(previous.reps) : 'reps'
 
   function changeWeight(text: string) {
     setWeight(text)
@@ -64,7 +66,7 @@ export function SetRow({ set, label, previous, unit, showCheck, onPatch, onToggl
     <div
       className={cn(
         'grid items-center gap-1.5 rounded-lg px-1 py-1 transition-colors',
-        showCheck ? 'grid-cols-[2.75rem_minmax(0,1fr)_minmax(3.25rem,4.5rem)_minmax(2.75rem,3.75rem)_2.75rem]' : 'grid-cols-[2.75rem_minmax(0,1fr)_minmax(3.25rem,4.5rem)_minmax(2.75rem,3.75rem)]',
+        showCheck ? 'grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem]' : 'grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)]',
         done && 'bg-primary/10',
       )}
     >
@@ -76,11 +78,10 @@ export function SetRow({ set, label, previous, unit, showCheck, onPatch, onToggl
       >
         {label}
       </button>
-      <span className="truncate text-sm text-muted-foreground tabular-nums">{prevText}</span>
       <input
         aria-label={`Weight (${weightLabel(unit)})`}
         inputMode="decimal"
-        placeholder={weightLabel(unit)}
+        placeholder={weightHint}
         value={weight}
         onChange={(e) => changeWeight(e.target.value)}
         className={input}
@@ -88,7 +89,7 @@ export function SetRow({ set, label, previous, unit, showCheck, onPatch, onToggl
       <input
         aria-label="Reps"
         inputMode="numeric"
-        placeholder="reps"
+        placeholder={repsHint}
         value={reps}
         onChange={(e) => changeReps(e.target.value)}
         className={input}

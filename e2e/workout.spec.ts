@@ -175,13 +175,13 @@ test('a workout started by accident can be discarded entirely, timer and all', a
   expect(server.tables.workouts).toHaveLength(0)
 })
 
-test('remove set, blank rows are ignored, and the columns read Last / kg or lbs', async ({ page }) => {
+test('remove set, blank rows are ignored, and the weight column is headed kg or lbs', async ({ page }) => {
   await fakeSupabase(page)
   await signUpAndOnboard(page)
   await startEmptyWithBench(page)
   const bench = card(page, 'Bench Press')
-  await expect(bench.getByText('Last', { exact: true })).toBeVisible()
-  await expect(bench.getByText('kg', { exact: true })).toBeVisible()
+  await expect(bench.getByText('kg', { exact: true })).toBeVisible() // header is just the unit
+  await expect(bench.getByText(/^(Last|Previous)/)).toHaveCount(0)
 
   // Remove set (with undo), then a blank row isn't counted at finish.
   await bench.getByRole('button', { name: 'Add set' }).click()
