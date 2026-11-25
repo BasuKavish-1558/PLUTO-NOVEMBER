@@ -4,7 +4,7 @@ import { Link } from 'react-router'
 import { Card } from '@/components/ui/card'
 import { Segmented } from '@/components/ui/segmented'
 import { bodyweightSeries, RANGES, type Range } from '@/domain/chartSeries'
-import { toDisplayWeight, type WeightUnit } from '@/domain/units'
+import { toDisplayWeight, weightLabel, type WeightUnit } from '@/domain/units'
 import { useWeightHistory } from '@/features/profile/queries'
 import { ProgressChart } from './ProgressChart'
 import { StatTiles } from './StatTiles'
@@ -18,7 +18,7 @@ export function BodyWeightProgress({ unit, today }: { unit: WeightUnit; today: s
     () => bodyweightSeries(entries ?? [], range, today).map((p) => ({ date: p.date, value: toDisplayWeight(p.weightKg, unit) })),
     [entries, range, today, unit],
   )
-  const format = (v: number) => `${v} ${unit}`
+  const format = (v: number) => `${v} ${weightLabel(unit)}`
   if (!entries) return <PageSkeleton cards={1} />
 
   return (
@@ -27,7 +27,7 @@ export function BodyWeightProgress({ unit, today }: { unit: WeightUnit; today: s
       {points.length ? (
         <>
           <StatTiles values={points.map((p) => p.value)} format={format} lowerIsBetter />
-          <ProgressChart title={`Body weight (${unit})`} points={points} format={format} />
+          <ProgressChart title={`Body weight (${weightLabel(unit)})`} points={points} format={format} />
         </>
       ) : (
         <p className="flex flex-col items-center gap-2 py-10 text-center text-sm text-muted-foreground">

@@ -1,10 +1,10 @@
-import { History, Plus, Trash2, Trophy } from 'lucide-react'
+import { History, Minus, Plus, Trash2, Trophy } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
-import { formatWeight, type WeightUnit } from '@/domain/units'
+import { formatWeight, weightLabel, type WeightUnit } from '@/domain/units'
 import type { PreviousSession } from '@/domain/workoutHistory'
 import { addSet, removeExercise, removeSet, toggleLogged, updateSet, updateSetAndFill, type Session, type SessionExercise } from '@/domain/workoutSession'
 import type { PersonalRecord } from '@/data/db'
@@ -36,6 +36,23 @@ export function ExerciseCard({ exercise, name, unit, previous, mode, onChange, o
   const optionsSet = exercise.sets.find((s) => s.id === optionsFor)
   const rowLabels = labels(exercise.sets)
   const live = mode === 'live'
+
+  /** Removes the bottom row (logged or not), with Undo in case it was the wrong one. */
+  function removeLastSet() {
+    const last = exercise.sets.at(-1)
+    if (!last) return
+    onChange((s) => removeSet(s, exercise.id, last.id))
+    toast(`Removed set ${rowLabels.at(-1)} of ${name}`, {
+      action: {
+        label: 'Undo',
+        onClick: () =>
+          onChange((s) => ({
+            ...s,
+            exercises: s.exercises.map((e) => (e.id === exercise.id && !e.sets.some((x) => x.id === last.id) ? { ...e, sets: [...e.sets, last] } : e)),
+          })),
+      },
+    })
+  }
 
   function remove() {
     const removed = exercise
@@ -92,8 +109,8 @@ export function ExerciseCard({ exercise, name, unit, previous, mode, onChange, o
       <div className="space-y-1">
         <div className={live ? 'grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(3.25rem,4.5rem)_minmax(2.75rem,3.75rem)_2.75rem] gap-1.5 px-1 text-xs font-medium text-muted-foreground' : 'grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(3.25rem,4.5rem)_minmax(2.75rem,3.75rem)] gap-1.5 px-1 text-xs font-medium text-muted-foreground'}>
           <span className="text-center">Set</span>
-          <span>Previous</span>
-          <span className="text-center">{unit}</span>
+          <span className="truncate" title="Last session">Last</span>
+          <span className="text-center">{weightLabel(unit)}</span>
           <span className="text-center">Reps</span>
           {live && <span />}
         </div>
@@ -112,13 +129,18 @@ export function ExerciseCard({ exercise, name, unit, previous, mode, onChange, o
         ))}
       </div>
 
-      <Button
-        variant="ghost"
-        className="w-full text-muted-foreground"
-        onClick={() => onChange((s) => addSet(s, exercise.id, crypto.randomUUID(), previous?.sets, !live))}
-      >
-        <Plus /> Add set
-      </Button>
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          variant="ghost"
+          className="text-muted-foreground"
+          onClick={() => onChange((s) => addSet(s, exercise.id, crypto.randomUUID(), previous?.sets, !live))}
+        >
+          <Plus /> Add set
+        </Button>
+        <Button variant="ghost" className="text-muted-foreground" disabled={!exercise.sets.length} onClick={removeLastSet}>
+          <Minus /> Remove set
+        </Button>
+      </div>
 
       <Drawer open={!!optionsSet} onOpenChange={(open) => !open && setOptionsFor(null)}>
         <DrawerContent className="mx-auto max-w-md">

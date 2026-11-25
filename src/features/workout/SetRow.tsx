@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useState } from 'react'
-import { toDisplayWeight, toStoredWeight, type WeightUnit } from '@/domain/units'
+import { toDisplayWeight, toStoredWeight, weightLabel, type WeightUnit } from '@/domain/units'
 import type { PreviousSet, SessionSet } from '@/domain/workoutSession'
 import { spring } from '@/lib/motion'
 import { cn } from '@/lib/utils'
@@ -78,9 +78,9 @@ export function SetRow({ set, label, previous, unit, showCheck, onPatch, onToggl
       </button>
       <span className="truncate text-sm text-muted-foreground tabular-nums">{prevText}</span>
       <input
-        aria-label={`Weight (${unit})`}
+        aria-label={`Weight (${weightLabel(unit)})`}
         inputMode="decimal"
-        placeholder={unit}
+        placeholder={weightLabel(unit)}
         value={weight}
         onChange={(e) => changeWeight(e.target.value)}
         className={input}

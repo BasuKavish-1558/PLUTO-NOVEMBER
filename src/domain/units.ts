@@ -35,7 +35,10 @@ export function toStoredHeight(value: number | FeetInches, unit: LengthUnit) {
   return round(ftInToCm(value as FeetInches), 1)
 }
 
-export const formatWeight = (kg: number, unit: WeightUnit) => `${toDisplayWeight(kg, unit)} ${unit}`
+/** What users read: "kg" for metric, "lbs" for imperial. */
+export const weightLabel = (unit: WeightUnit) => (unit === 'lb' ? 'lbs' : 'kg')
+
+export const formatWeight = (kg: number, unit: WeightUnit) => `${toDisplayWeight(kg, unit)} ${weightLabel(unit)}`
 
 export function formatHeight(cm: number, unit: LengthUnit) {
   if (unit === 'cm') return `${round(cm, 1)} cm`

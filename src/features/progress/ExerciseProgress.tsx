@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Segmented } from '@/components/ui/segmented'
 import type { PersonalRecord } from '@/data/db'
 import { exerciseSeries, RANGES, type Range } from '@/domain/chartSeries'
-import { toDisplayWeight, type WeightUnit } from '@/domain/units'
+import { toDisplayWeight, weightLabel, type WeightUnit } from '@/domain/units'
 import { useExerciseMap } from '@/features/library/queries'
 import { PrFormDrawer } from '@/features/prs/PrFormDrawer'
 import { PrList } from '@/features/prs/PrList'
@@ -58,7 +58,7 @@ export function ExerciseProgress({ exerciseId, onExercise, history, prs, unit, t
     [id, history, range, today],
   )
   const values = points.map((p) => toDisplayWeight(metric === 'top' ? p.topWeightKg : metric === 'volume' ? p.volumeKg : p.e1rmKg, unit))
-  const format = (v: number) => `${Math.round(v * 10) / 10} ${unit}`
+  const format = (v: number) => `${Math.round(v * 10) / 10} ${weightLabel(unit)}`
   const exercisePrs = prs.filter((p) => p.exercise_id === id)
 
   return (
@@ -84,7 +84,7 @@ export function ExerciseProgress({ exerciseId, onExercise, history, prs, unit, t
             {points.length ? (
               <>
                 <StatTiles values={values} format={format} />
-                <ProgressChart title={`${exercise.name}: ${METRIC_TITLE[metric]} (${unit})`} points={points.map((p, i) => ({ date: p.date, value: values[i]! }))} format={format} />
+                <ProgressChart title={`${exercise.name}: ${METRIC_TITLE[metric]} (${weightLabel(unit)})`} points={points.map((p, i) => ({ date: p.date, value: values[i]! }))} format={format} />
               </>
             ) : (
               <p className="flex flex-col items-center gap-2 py-10 text-center text-sm text-muted-foreground">

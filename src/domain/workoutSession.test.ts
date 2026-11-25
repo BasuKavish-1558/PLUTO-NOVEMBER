@@ -11,6 +11,8 @@ import {
   resumeTimer,
   toggleLogged,
   updateSetAndFill,
+  withoutEmptySets,
+  isEmptySet,
   updateSet,
   type ActiveWorkout,
   type SessionSet,
@@ -173,3 +175,24 @@ describe('updateSetAndFill', () => {
     expect(w.exercises[0]!.sets.map((x) => x.reps)).toEqual([null, 5])
   })
 })
+
+describe('empty sets', () => {
+  it('a row with neither weight nor reps (null or 0) is empty', () => {
+    expect(isEmptySet({ weightKg: null, reps: null })).toBe(true)
+    expect(isEmptySet({ weightKg: 0, reps: 0 })).toBe(true)
+    expect(isEmptySet({ weightKg: 0, reps: 12 })).toBe(false) // bodyweight set
+    expect(isEmptySet({ weightKg: 60, reps: null })).toBe(false) // half-filled: still the user's to fix
+  })
+
+  it('cannot be logged, and is dropped along with exercises left empty', () => {
+    const blank = set(null, null)
+    let w = workout([
+      { id: 'e1', exerciseId: 'bench', sets: [set(80, 8, { done: true }), blank] },
+      { id: 'e2', exerciseId: 'fly', sets: [set(0, 0)] },
+    ])
+    w = toggleLogged(w, 'e1', blank.id, 'now')
+    expect(w.exercises[0]!.sets[1]!.done).toBe(false)
+    expect(withoutEmptySets(w).exercises.map((e) => [e.id, e.sets.length])).toEqual([['e1', 1]])
+  })
+})
+

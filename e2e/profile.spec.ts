@@ -21,7 +21,7 @@ test('switching units converts display but keeps kg and cm stored', async ({ pag
 
   await expect(page.getByText('80 kg', { exact: true }).first()).toBeVisible()
   await page.getByRole('radio', { name: 'Imperial' }).click()
-  await expect(page.getByText('176.4 lb', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('176.4 lbs', { exact: true }).first()).toBeVisible()
   await expect(page.getByText('5′ 10″')).toBeVisible()
   await expect.poll(() => server.profile.weight_unit).toBe('lb')
   expect(server.tables.body_vitals![0]?.weight_kg).toBe(80)

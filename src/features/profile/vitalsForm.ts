@@ -4,6 +4,7 @@ import {
   toDisplayWeight,
   toStoredHeight,
   toStoredWeight,
+  weightLabel,
   type LengthUnit,
   type WeightUnit,
 } from '@/domain/units'
@@ -30,7 +31,7 @@ export function parseWeight(text: string, unit: WeightUnit): Parsed<number> {
   const kg = n === null ? null : toStoredWeight(n, unit)
   const [min, max] = LIMITS.weightKg
   if (kg === null || kg < min || kg > max) {
-    return fail(`Enter a weight from ${Math.ceil(toDisplayWeight(min, unit))} to ${Math.floor(toDisplayWeight(max, unit))} ${unit}`)
+    return fail(`Enter a weight from ${Math.ceil(toDisplayWeight(min, unit))} to ${Math.floor(toDisplayWeight(max, unit))} ${weightLabel(unit)}`)
   }
   return { ok: true, value: kg }
 }

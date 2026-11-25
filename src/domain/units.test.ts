@@ -40,7 +40,7 @@ describe('weight', () => {
     expect(toDisplayWeight(80, 'lb')).toBe(176.4)
     expect(formatWeight(80, 'kg')).toBe('80 kg')
     expect(formatWeight(72.35, 'kg')).toBe('72.4 kg')
-    expect(formatWeight(80, 'lb')).toBe('176.4 lb')
+    expect(formatWeight(80, 'lb')).toBe('176.4 lbs')
   })
 })
 

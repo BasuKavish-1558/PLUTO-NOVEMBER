@@ -174,3 +174,50 @@ test('a workout started by accident can be discarded entirely, timer and all', a
   await expect(page.getByRole('link', { name: /in progress/ })).toHaveCount(0) // gone from the device too
   expect(server.tables.workouts).toHaveLength(0)
 })
+
+test('remove set, blank rows are ignored, and the columns read Last / kg or lbs', async ({ page }) => {
+  await fakeSupabase(page)
+  await signUpAndOnboard(page)
+  await startEmptyWithBench(page)
+  const bench = card(page, 'Bench Press')
+  await expect(bench.getByText('Last', { exact: true })).toBeVisible()
+  await expect(bench.getByText('kg', { exact: true })).toBeVisible()
+
+  // Remove set (with undo), then a blank row isn't counted at finish.
+  await bench.getByRole('button', { name: 'Add set' }).click()
+  await expect(bench.getByLabel('Reps')).toHaveCount(2)
+  await bench.getByRole('button', { name: 'Remove set' }).click()
+  await expect(bench.getByLabel('Reps')).toHaveCount(1)
+  await page.getByRole('button', { name: 'Undo' }).click()
+  await expect(bench.getByLabel('Reps')).toHaveCount(2)
+
+  await bench.getByLabel('Weight (kg)').first().fill('60')
+  await bench.getByLabel('Reps').first().fill('8')
+  await bench.getByRole('button', { name: 'Log set' }).first().click()
+  await bench.getByLabel('Weight (kg)').nth(1).fill('') // second row left blank
+  await bench.getByLabel('Reps').nth(1).fill('')
+  await page.getByRole('button', { name: 'Finish', exact: true }).click()
+  await expect(page.getByText('Every row is logged.')).toBeVisible() // the blank row isn't "left out", it's ignored
+  await page.getByRole('button', { name: 'Finish and save' }).click()
+  await expect(page.getByText('Workout saved. Nice work!')).toBeVisible()
+
+  // Editing: a blank row doesn't block saving.
+  await page.getByRole('link', { name: 'Edit' }).click()
+  await card(page, 'Bench Press').getByRole('button', { name: 'Add set' }).click()
+  await card(page, 'Bench Press').getByLabel('Weight (kg)').nth(1).fill('')
+  await card(page, 'Bench Press').getByLabel('Reps').nth(1).fill('')
+  await page.getByRole('button', { name: 'Save changes' }).click()
+  await expect(page.getByText('Workout updated')).toBeVisible()
+  await expect(page.getByText('60 kg × 8')).toHaveCount(1)
+})
+
+test('imperial users see lbs in the logger', async ({ page }) => {
+  await fakeSupabase(page)
+  await signUpAndOnboard(page)
+  await page.goto('/profile')
+  await page.getByRole('radio', { name: 'Imperial' }).click()
+  await startEmptyWithBench(page)
+  const bench = card(page, 'Bench Press')
+  await expect(bench.getByText('lbs', { exact: true })).toBeVisible()
+  await expect(bench.getByLabel('Weight (lbs)')).toBeVisible()
+})

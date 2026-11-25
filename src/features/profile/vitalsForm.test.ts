@@ -23,7 +23,7 @@ describe('parseWeight', () => {
 
   it('checks the range in kg and reports it in the chosen unit', () => {
     expect(parseWeight('19', 'kg')).toEqual({ ok: false, error: 'Enter a weight from 20 to 400 kg' })
-    expect(parseWeight('40', 'lb')).toEqual({ ok: false, error: 'Enter a weight from 45 to 881 lb' })
+    expect(parseWeight('40', 'lb')).toEqual({ ok: false, error: 'Enter a weight from 45 to 881 lbs' })
   })
 
   it('pre-fills in the display unit', () => {

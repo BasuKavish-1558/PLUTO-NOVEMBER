@@ -10,7 +10,7 @@ import type { PersonalRecord } from '@/data/db'
 import { createPr, deletePr, updatePr } from '@/data/repos/prs'
 import { PHOTO_MAX_PX } from '@/data/repos/photos'
 import { beatsPrevious, previousRecord, type PrType } from '@/domain/personalRecords'
-import { toDisplayWeight, toStoredWeight, type WeightUnit } from '@/domain/units'
+import { toDisplayWeight, toStoredWeight, weightLabel, type WeightUnit } from '@/domain/units'
 import { PhotoButtons } from '@/features/profile/PhotoButtons'
 import { useMediaUrl } from '@/features/profile/queries'
 import { celebrate } from '@/lib/confetti'
@@ -92,7 +92,7 @@ export function PrFormDrawer({ exerciseId, exerciseName, pr, prefill, allPrs, un
     >
       <Segmented label="Record type" value={type} options={PR_TYPES} onChange={(t) => { setType(t); setConfirmAnyway(false) }} />
       <div className="grid grid-cols-2 gap-3">
-        <Field label={`Weight (${unit})`} htmlFor="pr-weight" error={errors.weight}>
+        <Field label={`Weight (${weightLabel(unit)})`} htmlFor="pr-weight" error={errors.weight}>
           <Input id="pr-weight" inputMode="decimal" placeholder="BW" value={weight} onChange={(e) => { setWeight(e.target.value); setConfirmAnyway(false) }} aria-invalid={!!errors.weight} />
         </Field>
         <Field label="Reps" htmlFor="pr-reps" error={errors.reps}>

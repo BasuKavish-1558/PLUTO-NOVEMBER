@@ -125,6 +125,15 @@ export const updateSetAndFill = <S extends Session>(s: S, exId: string, setId: s
     }
   })
 
+/** No weight (or 0) and no reps (or 0): a blank row. It never counts and is never saved. */
+export const isEmptySet = (set: Pick<SessionSet, 'weightKg' | 'reps'>) => !set.weightKg && !set.reps
+
+/** Drops blank rows (and exercises left with none), e.g. before saving an edited workout. */
+export const withoutEmptySets = <S extends Session>(s: S): S => ({
+  ...s,
+  exercises: s.exercises.map((e) => ({ ...e, sets: e.sets.filter((x) => !isEmptySet(x)) })).filter((e) => e.sets.length > 0),
+})
+
 export const canLog = (set: SessionSet) => set.reps !== null && Number.isInteger(set.reps) && set.reps >= 1
 
 /** The ✓ tap: logs a valid row (empty weight = bodyweight, 0 kg) or un-logs a logged one. */

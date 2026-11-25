@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Segmented } from '@/components/ui/segmented'
-import type { LengthUnit, WeightUnit } from '@/domain/units'
+import { weightLabel, type LengthUnit, type WeightUnit } from '@/domain/units'
 import type { HeightDraft } from './vitalsForm'
 
 function Suffixed({ suffix, ...props }: ComponentProps<typeof Input> & { suffix: string }) {
@@ -23,7 +23,7 @@ export function WeightField({ id, label = 'Body weight', unit, value, error, onC
     <Field label={label} htmlFor={id} error={error}>
       <Suffixed
         id={id}
-        suffix={unit}
+        suffix={weightLabel(unit)}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={!!error}
@@ -68,7 +68,7 @@ export function UnitsPicker({ weightUnit, lengthUnit, onChange }: UnitsProps) {
         <Segmented
           label="Weight unit"
           value={weightUnit}
-          options={[{ value: 'kg', label: 'kg' }, { value: 'lb', label: 'lb' }]}
+          options={[{ value: 'kg', label: 'kg' }, { value: 'lb', label: 'lbs' }]}
           onChange={(w) => onChange(w, lengthUnit)}
         />
         <Segmented

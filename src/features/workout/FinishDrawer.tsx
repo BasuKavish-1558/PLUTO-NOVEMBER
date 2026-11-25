@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
 import { finishWorkout } from '@/data/repos/workouts'
-import { finishedRows, loggedSetCount, type ActiveWorkout } from '@/domain/workoutSession'
+import { finishedRows, isEmptySet, loggedSetCount, type ActiveWorkout } from '@/domain/workoutSession'
 import { summarizeWorkout } from '@/domain/workoutStats'
 import { useProfile } from '@/features/profile/queries'
 import { useActiveWorkout } from '@/stores/activeWorkout'
@@ -20,7 +20,8 @@ export function FinishDrawer({ workout, open, onOpenChange }: Props) {
   const [busy, setBusy] = useState(false)
 
   const logged = loggedSetCount(workout)
-  const unlogged = workout.exercises.reduce((n, e) => n + e.sets.length, 0) - logged
+  // Blank rows don't count: they're ignored, not "left out".
+  const unlogged = workout.exercises.reduce((n, e) => n + e.sets.filter((x) => !x.done && !isEmptySet(x)).length, 0)
   // Preview with the same rules the saved workout will use (open the sheet = "now").
   const [openedAt] = useState(() => Date.now())
   const preview = finishedRows(workout, openedAt)

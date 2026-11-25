@@ -7,7 +7,7 @@ import { useSheet } from '@/components/layout/useSheet'
 import { Button } from '@/components/ui/button'
 import { saveWorkoutEdits } from '@/data/repos/workouts'
 import { diffWorkout, sessionFromRows } from '@/domain/workoutHistory'
-import { addExercise, canLog, type Session } from '@/domain/workoutSession'
+import { addExercise, canLog, withoutEmptySets, type Session } from '@/domain/workoutSession'
 import { useExerciseMap } from '@/features/library/queries'
 import { useProfile } from '@/features/profile/queries'
 import { ExercisePickerDrawer } from '@/features/split/ExercisePickerDrawer'
@@ -36,11 +36,12 @@ function Editor({ detail }: { detail: WorkoutDetail }) {
   const back = `/workout/${detail.workout.id}`
 
   async function save() {
-    if (draft.exercises.some((e) => e.sets.some((s) => !canLog(s)))) {
-      return toast.error('Every set needs a rep count. Fill it in or delete the set.')
+    const kept = withoutEmptySets(draft) // blank rows are ignored, not errors
+    if (kept.exercises.some((e) => e.sets.some((s) => !canLog(s)))) {
+      return toast.error('A set with a weight needs a rep count. Fill it in or remove the set.')
     }
     setBusy(true)
-    await saveWorkoutEdits(detail.workout, diffWorkout(detail.exercises, detail.sets, draft), draft.notes)
+    await saveWorkoutEdits(detail.workout, diffWorkout(detail.exercises, detail.sets, kept), draft.notes)
     toast.success('Workout updated')
     navigate(back, { replace: true })
   }
