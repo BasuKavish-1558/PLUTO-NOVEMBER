@@ -20,16 +20,28 @@ test('navigation reaches every page', async ({ page, isMobile }) => {
   await nav.getByRole('link', { name: 'Workout' }).click()
   await expect(page).toHaveURL(/\/workout$/)
 
-  if (isMobile) {
-    await nav.getByRole('button', { name: 'More' }).click()
-    await page.getByRole('link', { name: /Nutrition/ }).click()
-    await expect(page).toHaveURL(/\/nutrition$/)
-    await page.getByRole('link', { name: 'Profile' }).click() // header avatar
-    await expect(page).toHaveURL(/\/profile$/)
-  } else {
-    await nav.getByRole('link', { name: 'Split' }).click()
-    await expect(page).toHaveURL(/\/split$/)
-  }
+  // Split is a sub-section of Workout now.
+  await page.getByRole('link', { name: /Your split/ }).click()
+  await expect(page).toHaveURL(/\/workout\/split$/)
+  await expect(nav.getByRole('link', { name: 'Workout' })).toHaveAttribute('aria-current', 'page') // tab stays lit
+  await page.getByRole('link', { name: 'Workout', exact: true }).first().click()
+  await page.getByRole('link', { name: /Exercise library/ }).click()
+  await expect(page).toHaveURL(/\/workout\/library$/)
+
+  await expect(nav.getByRole('link')).toHaveCount(isMobile ? 4 : 5) // phone: Home · Workout · Progress · Nutrition
+  await expect(nav.getByRole('button', { name: 'More' })).toHaveCount(0)
+  await nav.getByRole('link', { name: 'Nutrition' }).click()
+  await expect(page).toHaveURL(/\/nutrition$/)
+  if (isMobile) await page.getByRole('link', { name: 'Profile' }).click() // header avatar
+  else await nav.getByRole('link', { name: 'Profile' }).click()
+  await expect(page).toHaveURL(/\/profile$/)
+})
+
+test('old /split links still open the right screen', async ({ page }) => {
+  await page.goto('/split')
+  await expect(page).toHaveURL(/\/workout\/split$/)
+  await page.goto('/split/library')
+  await expect(page).toHaveURL(/\/workout\/library$/)
 })
 
 test('theme choice is saved to the profile and survives reload', async ({ page }) => {

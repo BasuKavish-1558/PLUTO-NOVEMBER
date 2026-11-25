@@ -57,7 +57,7 @@ test('workout and PR: from the split, two-tap sets, a PR mid-workout, then summa
   await expect(page.getByText('day streak')).toBeVisible()
 
   // Split
-  await page.goto('/split')
+  await page.goto('/workout/split')
   await page.getByRole('button', { name: 'New split' }).first().click()
   await page.getByRole('button', { name: /Push \/ Pull \/ Legs/ }).click()
   await expect(page.getByText("Active split: today's workout comes from here")).toBeVisible()

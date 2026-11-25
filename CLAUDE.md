@@ -61,5 +61,5 @@ Definition of done for a phase: `npm run typecheck && npm run lint && npm test &
 - Motion: springy 150–300 ms transitions, animated page transitions, animated protein ring, calendar cells that fill in, drag-to-reorder exercises (plus up/down buttons for keyboard users), confetti + bounce on PR, subtle press feedback. Always respect `prefers-reduced-motion` (`MotionConfig reducedMotion="user"`; skip confetti).
 - Mobile-first, tap targets ≥ 44 px.
 - **Home = the calendar** (contribution-style month grid, streak and monthly count, tap a day for its log). Nothing else lives on Home. Today's workout and quick start are at the top of Workout; the protein ring is on Nutrition.
-- Phone: header with the **profile avatar top-left**, bottom nav **Home · Workout · Progress · More** (More sheet = Split, Nutrition). ≥ md: sidebar with Home, Workout, Split, Progress, Nutrition, Profile.
+- Phone: header with the **profile avatar top-left**, bottom nav **Home · Workout · Progress · Nutrition**. ≥ md: sidebar with Home, Workout, Progress, Nutrition, Profile. **Split is a sub-section of Workout** (`/workout/split`, `/workout/library`; paths in `src/features/split/paths.ts`, old `/split` URLs redirect).
 - Logging a set takes ≤ 2 taps: rows are pre-filled from the previous set or last session, and one tap on ✓ logs it.

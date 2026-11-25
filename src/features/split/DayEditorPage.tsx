@@ -17,14 +17,15 @@ import { useSplitDetail, type DayWithItems } from './queries'
 import { MAX_DAY_LABEL, WEEKDAYS } from './splitText'
 import { TargetsDrawer } from './TargetsDrawer'
 import { PageSkeleton } from '@/components/ui/skeleton'
+import { SPLIT_PATH, splitPath } from '@/features/split/paths'
 
 export function DayEditorPage() {
   const { splitId, weekday } = useParams()
   const detail = useSplitDetail(splitId)
-  if (detail === null) return <Navigate to="/split" replace />
+  if (detail === null) return <Navigate to={SPLIT_PATH} replace />
   if (!detail) return <PageSkeleton />
   const day = detail.days.find((d) => d.weekday === Number(weekday))
-  if (!day) return <Navigate to={`/split/${detail.split.id}`} replace />
+  if (!day) return <Navigate to={splitPath(detail.split.id)} replace />
   return <DayEditor key={day.id} splitId={detail.split.id} splitName={detail.split.name} day={day} />
 }
 
@@ -42,7 +43,7 @@ function DayEditor({ splitId, splitName, day }: { splitId: string; splitName: st
 
   return (
     <div className="space-y-5">
-      <BackLink to={`/split/${splitId}`} label={splitName} />
+      <BackLink to={splitPath(splitId)} label={splitName} />
       <h1 className="text-2xl font-semibold tracking-tight">{WEEKDAYS[day.weekday - 1]}</h1>
 
       <Card className="space-y-5">

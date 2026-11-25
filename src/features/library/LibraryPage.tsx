@@ -12,6 +12,7 @@ import { ExerciseList } from './ExerciseList'
 import { LibraryFilters } from './LibraryFilters'
 import { useLibrary } from './queries'
 import { useLibraryFilter } from './useLibraryFilter'
+import { SPLIT_PATH } from '@/features/split/paths'
 
 export function LibraryPage() {
   const library = useLibrary()
@@ -35,7 +36,7 @@ export function LibraryPage() {
 
   return (
     <div className="space-y-5">
-      <BackLink to="/split" label="Split" />
+      <BackLink to={SPLIT_PATH} label="Split" />
       <PageHeader title="Exercise library" />
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground tabular-nums">{filter.results.length} exercises</p>

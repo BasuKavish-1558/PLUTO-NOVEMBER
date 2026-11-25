@@ -5,7 +5,7 @@ import { signUpAndOnboard } from './support/onboard'
 test.beforeEach(async ({ page }) => {
   await fakeSupabase(page)
   await signUpAndOnboard(page)
-  await page.goto('/split/library')
+  await page.goto('/workout/library')
 })
 
 test('browses ~150 exercises, searches and filters', async ({ page }) => {

@@ -10,6 +10,7 @@ import { useActiveSplit } from '@/features/split/queries'
 import { dayTitle } from '@/features/split/splitText'
 import { DayPickerDrawer } from './DayPickerDrawer'
 import { EMPTY_PLAN, planFromDay, useStartWorkout } from './useStartWorkout'
+import { SPLIT_PATH } from '@/features/split/paths'
 
 const PREVIEW = 6
 
@@ -55,7 +56,7 @@ export function TodayCard() {
         <>
           <p className="text-sm text-muted-foreground">Pick a split and today's workout shows up here.</p>
           <Button asChild size="lg" className="w-full">
-            <Link to="/split">
+            <Link to={SPLIT_PATH}>
               <Layers className="size-5" /> Choose a split
             </Link>
           </Button>

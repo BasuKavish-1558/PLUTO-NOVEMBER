@@ -1,5 +1,6 @@
 import { BookOpen, ChevronRight, Layers, Plus } from 'lucide-react'
 import { Link } from 'react-router'
+import { BackLink } from '@/components/layout/BackLink'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { useSheet } from '@/components/layout/useSheet'
 import { Button } from '@/components/ui/button'
@@ -11,6 +12,7 @@ import { NewSplitDrawer } from './NewSplitDrawer'
 import { useActiveSplit, useSplits } from './queries'
 import { WeekOverview } from './WeekOverview'
 import { PageSkeleton } from '@/components/ui/skeleton'
+import { LIBRARY_PATH, splitPath } from '@/features/split/paths'
 
 export function SplitPage() {
   const profile = useProfile()
@@ -23,6 +25,7 @@ export function SplitPage() {
 
   return (
     <div className="space-y-5">
+      <BackLink to="/workout" label="Workout" />
       <PageHeader title="Split">
         <Button variant="secondary" onClick={create.show}>
           <Plus /> New split
@@ -37,7 +40,7 @@ export function SplitPage() {
               <h2 className="truncate text-lg font-semibold">{active.split.name}</h2>
             </div>
             <Button asChild variant="outline" size="sm">
-              <Link to={`/split/${active.split.id}`}>Edit</Link>
+              <Link to={splitPath(active.split.id)}>Edit</Link>
             </Button>
           </div>
           <WeekOverview detail={active} />
@@ -65,7 +68,7 @@ export function SplitPage() {
           <ul className="divide-y overflow-hidden rounded-xl border bg-card">
             {others.map((s) => (
               <li key={s.id} className="flex min-h-14 items-center gap-2 pr-3">
-                <Link to={`/split/${s.id}`} className="flex min-h-14 min-w-0 flex-1 items-center px-5 font-medium">
+                <Link to={splitPath(s.id)} className="flex min-h-14 min-w-0 flex-1 items-center px-5 font-medium">
                   <span className="truncate">{s.name}</span>
                 </Link>
                 <Button size="sm" variant="outline" onClick={() => void activateSplit(profile.id, s.id)}>
@@ -82,7 +85,7 @@ export function SplitPage() {
       </Button>
 
       <Link
-        to="/split/library"
+        to={LIBRARY_PATH}
         className="flex min-h-16 items-center gap-4 rounded-xl border bg-card px-5 transition-colors hover:bg-muted/50 active:bg-muted"
       >
         <span className="grid size-10 place-items-center rounded-xl bg-muted">

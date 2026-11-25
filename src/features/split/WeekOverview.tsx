@@ -4,6 +4,7 @@ import { isoWeekday, toLocalDate } from '@/domain/dates'
 import { cn } from '@/lib/utils'
 import type { SplitDetail } from './queries'
 import { dayTitle, WEEKDAYS } from './splitText'
+import { dayPath } from '@/features/split/paths'
 
 /** Mon–Sun rows, today highlighted; each opens that day's editor. */
 export function WeekOverview({ detail }: { detail: SplitDetail }) {
@@ -16,7 +17,7 @@ export function WeekOverview({ detail }: { detail: SplitDetail }) {
         return (
           <li key={d.id}>
             <Link
-              to={`/split/${detail.split.id}/${d.weekday}`}
+              to={dayPath(detail.split.id, d.weekday)}
               className="flex min-h-14 items-center gap-4 px-5 py-2 transition-colors hover:bg-muted/50 active:bg-muted"
             >
               <span className={cn('w-10 text-sm font-medium', isToday ? 'text-primary' : 'text-muted-foreground')}>

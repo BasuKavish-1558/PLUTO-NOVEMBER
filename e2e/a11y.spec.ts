@@ -4,14 +4,14 @@ import { fakeSupabase } from './support/fakeSupabase'
 import { signUpAndOnboard } from './support/onboard'
 
 /** Screens to audit once an account has a split, a finished workout and a running one. */
-const SCREENS = ['/', '/workout', '/workout/live', '/split', '/split/library', '/progress', '/progress?tab=body', '/nutrition', '/profile']
+const SCREENS = ['/', '/workout', '/workout/live', '/workout/split', '/workout/library', '/progress', '/progress?tab=body', '/nutrition', '/profile']
 
 async function seed(page: Page) {
   await fakeSupabase(page)
   await signUpAndOnboard(page)
   await page.goto('/profile') // audit with the busiest background pattern on
   await page.getByRole('radio', { name: 'Mixed' }).click()
-  await page.goto('/split')
+  await page.goto('/workout/split')
   await page.getByRole('button', { name: 'New split' }).first().click()
   await page.getByRole('button', { name: /Push \/ Pull \/ Legs/ }).click()
   await expect(page.getByText("Active split: today's workout comes from here")).toBeVisible()

@@ -78,7 +78,7 @@ test('the in-progress workout survives a reload', async ({ page }) => {
 test('a split day starts pre-filled and shows last session (WK-5)', async ({ page }) => {
   await fakeSupabase(page)
   await signUpAndOnboard(page)
-  await page.goto('/split')
+  await page.goto('/workout/split')
   await page.getByRole('button', { name: 'New split' }).first().click()
   await page.getByRole('button', { name: /Push \/ Pull \/ Legs/ }).click()
   await expect(page.getByText("Active split: today's workout comes from here")).toBeVisible()
@@ -150,8 +150,27 @@ test('an accidentally started timer can be reset to 0:00, keeping logged sets', 
   await page.waitForTimeout(2200)
   await expect(page.getByRole('timer')).not.toHaveText(/^0:0[01]/)
 
-  await page.getByRole('button', { name: 'Reset timer' }).click()
-  await page.getByRole('button', { name: 'Reset to 0:00' }).click()
+  await page.getByRole('button', { name: 'Workout options' }).click()
+  await page.getByRole('button', { name: 'Reset timer to 0:00' }).click()
   await expect(page.getByRole('timer')).toHaveText(/^0:0[01]/)
   await expect(card(page, 'Bench Press').getByRole('button', { name: 'Undo set' })).toHaveCount(1)
+})
+
+test('a workout started by accident can be discarded entirely, timer and all', async ({ page }) => {
+  const server = await fakeSupabase(page)
+  await signUpAndOnboard(page)
+  await startEmptyWithBench(page)
+  await card(page, 'Bench Press').getByLabel('Reps').fill('5')
+  await card(page, 'Bench Press').getByRole('button', { name: 'Log set' }).click()
+
+  await page.getByRole('button', { name: 'Workout options' }).click()
+  await page.getByRole('button', { name: 'Discard workout' }).click()
+  await page.getByRole('button', { name: 'Tap again to discard for good' }).click()
+
+  await expect(page).toHaveURL(/\/workout$/)
+  await expect(page.getByRole('link', { name: /in progress/ })).toHaveCount(0) // no resume banner
+  await expect(page.getByText('No workouts yet')).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('link', { name: /in progress/ })).toHaveCount(0) // gone from the device too
+  expect(server.tables.workouts).toHaveLength(0)
 })

@@ -16,6 +16,7 @@ import { useSplitDetail } from './queries'
 import { MAX_SPLIT_NAME } from './splitText'
 import { WeekOverview } from './WeekOverview'
 import { PageSkeleton } from '@/components/ui/skeleton'
+import { SPLIT_PATH } from '@/features/split/paths'
 
 export function SplitEditorPage() {
   const { splitId } = useParams()
@@ -25,20 +26,20 @@ export function SplitEditorPage() {
   const rename = useSheet()
   const remove = useSheet()
 
-  if (detail === null) return <Navigate to="/split" replace />
+  if (detail === null) return <Navigate to={SPLIT_PATH} replace />
   if (!detail || !profile) return <PageSkeleton />
   const { split } = detail
   const isActive = profile.active_split_id === split.id
 
   async function onDelete() {
-    navigate('/split', { replace: true })
+    navigate(SPLIT_PATH, { replace: true })
     await deleteSplit(split.id, profile!)
     toast(`Deleted ${split.name}`)
   }
 
   return (
     <div className="space-y-5">
-      <BackLink to="/split" label="Split" />
+      <BackLink to={SPLIT_PATH} label="Split" />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight break-words">{split.name}</h1>

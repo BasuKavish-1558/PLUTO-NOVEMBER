@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router'
 import { RouteError } from '@/components/layout/RouteError'
+import { LegacySplitRedirect } from '@/components/layout/LegacySplitRedirect'
 import { Splash } from '@/components/layout/Splash'
 import { AuthPage } from '@/features/auth/AuthPage'
 import { Gate } from '@/features/auth/Gate'
@@ -48,10 +49,13 @@ export const router = createBrowserRouter([
           { path: 'workout/:workoutId', lazy: page(() => import('@/features/workout/WorkoutDetailPage'), (m) => m.WorkoutDetailPage) },
           { path: 'workout/:workoutId/edit', lazy: page(() => import('@/features/workout/EditWorkoutPage'), (m) => m.EditWorkoutPage) },
           { path: 'progress', lazy: page(() => import('@/features/progress/ProgressPage'), (m) => m.ProgressPage) },
-          { path: 'split', lazy: page(() => import('@/features/split/SplitPage'), (m) => m.SplitPage) },
-          { path: 'split/library', lazy: page(() => import('@/features/library/LibraryPage'), (m) => m.LibraryPage) },
-          { path: 'split/:splitId', lazy: page(() => import('@/features/split/SplitEditorPage'), (m) => m.SplitEditorPage) },
-          { path: 'split/:splitId/:weekday', lazy: page(() => import('@/features/split/DayEditorPage'), (m) => m.DayEditorPage) },
+          // Split is part of Workout. Static segments outrank workout/:workoutId.
+          { path: 'workout/split', lazy: page(() => import('@/features/split/SplitPage'), (m) => m.SplitPage) },
+          { path: 'workout/split/:splitId', lazy: page(() => import('@/features/split/SplitEditorPage'), (m) => m.SplitEditorPage) },
+          { path: 'workout/split/:splitId/:weekday', lazy: page(() => import('@/features/split/DayEditorPage'), (m) => m.DayEditorPage) },
+          { path: 'workout/library', lazy: page(() => import('@/features/library/LibraryPage'), (m) => m.LibraryPage) },
+          // Old /split links (bookmarks, installed apps) keep working.
+          { path: 'split/*', element: <LegacySplitRedirect /> },
           { path: 'nutrition', lazy: page(() => import('@/features/nutrition/NutritionPage'), (m) => m.NutritionPage) },
           { path: 'profile', lazy: page(() => import('@/features/profile/ProfilePage'), (m) => m.ProfilePage) },
         ],

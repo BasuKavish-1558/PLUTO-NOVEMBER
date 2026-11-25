@@ -1,11 +1,10 @@
-import { Pause, Play, Plus, RotateCcw } from 'lucide-react'
+import { EllipsisVertical, Pause, Play, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Navigate } from 'react-router'
-import { FormDrawer } from '@/components/layout/FormDrawer'
 import { useSheet } from '@/components/layout/useSheet'
 import { Button } from '@/components/ui/button'
 import { loadPrevious } from '@/data/repos/workouts'
-import { addExercise, elapsedMs, initialSets, pauseTimer, resetTimer, resumeTimer, type ActiveWorkout, type SessionExercise } from '@/domain/workoutSession'
+import { addExercise, elapsedMs, initialSets, pauseTimer, resumeTimer, type ActiveWorkout, type SessionExercise } from '@/domain/workoutSession'
 import { formatClock } from '@/domain/workoutStats'
 import { useExerciseMap } from '@/features/library/queries'
 import { useProfile } from '@/features/profile/queries'
@@ -17,6 +16,7 @@ import { ExerciseCard } from './ExerciseCard'
 import { FinishDrawer } from './FinishDrawer'
 import { NotesField } from './NotesField'
 import { useNow, usePreviousPerformance } from './queries'
+import { WorkoutOptionsDrawer } from './WorkoutOptionsDrawer'
 import { PageSkeleton } from '@/components/ui/skeleton'
 
 export function LiveWorkoutPage() {
@@ -38,7 +38,7 @@ function Live({ workout }: { workout: ActiveWorkout }) {
   const now = useNow(!paused)
   const picker = useSheet()
   const finish = useSheet()
-  const reset = useSheet()
+  const options = useSheet()
   const unit = profile?.weight_unit ?? 'kg'
   const allPrs = usePrs() ?? []
   const sessionPrs = allPrs.filter((p) => workout.prIds?.includes(p.id))
@@ -66,8 +66,8 @@ function Live({ workout }: { workout: ActiveWorkout }) {
         <Button variant="outline" size="icon" aria-label={paused ? 'Resume timer' : 'Pause timer'} onClick={togglePause}>
           {paused ? <Play /> : <Pause />}
         </Button>
-        <Button variant="ghost" size="icon" aria-label="Reset timer" onClick={reset.show} className="text-muted-foreground">
-          <RotateCcw />
+        <Button variant="ghost" size="icon" aria-label="Workout options" onClick={options.show} className="text-muted-foreground">
+          <EllipsisVertical />
         </Button>
         <Button onClick={finish.show}>Finish</Button>
       </div>
@@ -125,19 +125,7 @@ function Live({ workout }: { workout: ActiveWorkout }) {
           onCreated={(id) => update((w) => ({ ...w, prIds: [...(w.prIds ?? []), id] }))}
         />
       )}
-      <FormDrawer
-        open={reset.open}
-        onOpenChange={reset.onOpenChange}
-        title="Reset the timer?"
-        description="Started it by accident? The clock goes back to 0:00. Your logged sets stay."
-        submitLabel="Reset to 0:00"
-        onSubmit={() => {
-          update((w) => ({ ...w, timer: resetTimer(w.timer, Date.now()) }))
-          reset.onOpenChange(false)
-        }}
-      >
-        {null}
-      </FormDrawer>
+      <WorkoutOptionsDrawer open={options.open} onOpenChange={options.onOpenChange} />
       <FinishDrawer key={finish.key} workout={workout} open={finish.open} onOpenChange={finish.onOpenChange} />
     </div>
   )

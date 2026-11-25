@@ -7,6 +7,7 @@ import { ExerciseList } from '@/features/library/ExerciseList'
 import { LibraryFilters } from '@/features/library/LibraryFilters'
 import { useLibraryFilter } from '@/features/library/useLibraryFilter'
 import { useLibrary } from '@/features/library/queries'
+import { LIBRARY_PATH } from '@/features/split/paths'
 
 type Props = {
   open: boolean
@@ -27,7 +28,7 @@ export function ExercisePickerDrawer({ open, onOpenChange, addedIds, onAdd }: Pr
           <DrawerTitle>Add exercises</DrawerTitle>
           <DrawerDescription>
             Missing one?{' '}
-            <Link to="/split/library" className="font-medium text-primary underline-offset-4 hover:underline">
+            <Link to={LIBRARY_PATH} className="font-medium text-primary underline-offset-4 hover:underline">
               Add it to the library
             </Link>
           </DrawerDescription>

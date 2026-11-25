@@ -9,6 +9,7 @@ import type { Profile } from '@/data/db'
 import { buildCustomRows, buildPresetRows, PRESETS, type SplitRows } from '@/data/presets'
 import { activateSplit, createSplit } from '@/data/repos/splits'
 import { MAX_SPLIT_NAME } from './splitText'
+import { splitPath } from '@/features/split/paths'
 
 type Props = { profile: Profile; open: boolean; onOpenChange: (open: boolean) => void }
 
@@ -23,7 +24,7 @@ export function NewSplitDrawer({ profile, open, onOpenChange }: Props) {
     if (!profile.active_split_id) await activateSplit(profile.id, id)
     toast.success(profile.active_split_id ? `Created ${rows.split.name}` : `${rows.split.name} is now your active split`)
     onOpenChange(false)
-    navigate(`/split/${id}`)
+    navigate(splitPath(id))
   }
 
   function onCustom(e: FormEvent) {

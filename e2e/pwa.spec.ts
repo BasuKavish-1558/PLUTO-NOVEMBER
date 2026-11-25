@@ -57,7 +57,7 @@ test('starts and works fully offline once installed', async ({ page, context }) 
   await expect(page.getByText('day streak')).toBeVisible()
   await expect(page.getByRole('status').filter({ hasText: 'Offline' })).toBeVisible()
 
-  for (const path of ['/workout', '/progress', '/split/library', '/nutrition', '/profile']) {
+  for (const path of ['/workout', '/progress', '/workout/library', '/nutrition', '/profile']) {
     await page.goto(path)
     await expect(page.getByRole('heading', { name: /This screen isn't available offline/ })).toHaveCount(0)
     await expect(page.locator('main')).not.toBeEmpty()
@@ -112,7 +112,7 @@ test('the Content-Security-Policy blocks nothing the app needs', async ({ page, 
   await fakeSupabase(context)
   await signUpAndOnboard(page)
   await expect(page.locator('meta[http-equiv=Content-Security-Policy]')).toHaveCount(1)
-  for (const path of ['/workout', '/progress?tab=body', '/split/library', '/nutrition', '/profile']) {
+  for (const path of ['/workout', '/progress?tab=body', '/workout/library', '/nutrition', '/profile']) {
     await page.goto(path)
     await expect(page.locator('main')).not.toBeEmpty()
   }

@@ -6,7 +6,7 @@ const PPL_WEEK = ['Push', 'Pull', 'Legs', 'Push', 'Pull', 'Legs', null]
 const todayIndex = (new Date().getDay() + 6) % 7 // Monday = 0
 
 async function newSplit(page: Page) {
-  await page.goto('/split')
+  await page.goto('/workout/split')
   await page.getByRole('button', { name: 'New split' }).first().click()
 }
 
@@ -82,7 +82,7 @@ test('several splits, one active', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Upper / Lower' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Make active' })).toBeVisible()
 
-  await page.goto('/split')
+  await page.goto('/workout/split')
   await expect(page.getByRole('heading', { name: 'Push / Pull / Legs' })).toBeVisible()
   await page.getByRole('listitem').filter({ hasText: 'Upper / Lower' }).getByRole('button', { name: 'Make active' }).click()
   await expect(page.getByRole('heading', { name: 'Upper / Lower' })).toBeVisible()
