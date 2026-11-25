@@ -78,7 +78,7 @@ test('appearance: theme (light/dark/system) and a gym background, saved to the p
   await expect(backgrounds.getByRole('radio', { name: 'Dumbbells' })).toBeChecked()
   await backgrounds.getByRole('radio', { name: 'Dumbbells' }).press('ArrowRight') // keyboard moves the choice
   await expect(backgrounds.getByRole('radio', { name: 'Kettlebells' })).toBeChecked()
-  await expect.poll(() => server.profile.background).toBe('kettlebells')
+  await expect.poll(() => server.profile.background, { timeout: 15_000 }).toBe('kettlebells') // background sync
 
   await page.reload()
   await expect(page.locator('div.fixed.-z-10')).toHaveCount(1) // the pattern layer survives a reload

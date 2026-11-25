@@ -19,7 +19,14 @@ export const recoveryHash = (type: 'recovery' | 'signup' = 'recovery') =>
   `#access_token=${jwt(USER_ID)}&refresh_token=refresh&expires_in=3600&expires_at=${Math.floor(Date.now() / 1000) + 3600}&token_type=bearer&type=${type}`
 
 /** Pass a BrowserContext (not a Page) when a service worker is active, so its requests are routed too. */
-export async function fakeSupabase(page: Page | BrowserContext) {
+export async function fakeSupabase(page: Page | BrowserContext, { intro = false } = {}) {
+  // Most tests start mid-app: mark the launch intro as seen and played (intro.spec.ts covers it).
+  if (!intro) {
+    await page.addInitScript(() => {
+      localStorage.setItem('pluto-intro-seen', '1')
+      sessionStorage.setItem('pluto-intro-played', '1')
+    })
+  }
   const now = new Date().toISOString()
   const state = {
     profile: {

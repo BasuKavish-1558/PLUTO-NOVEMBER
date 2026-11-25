@@ -140,3 +140,18 @@ test('logs offline and syncs when the connection returns', async ({ page, contex
   await expect.poll(() => server.tables.workouts!.length, { timeout: 10_000 }).toBe(1)
   await expect.poll(() => server.tables.set_logs!.map((s) => s.weight_kg)).toEqual([100])
 })
+
+test('an accidentally started timer can be reset to 0:00, keeping logged sets', async ({ page }) => {
+  await fakeSupabase(page)
+  await signUpAndOnboard(page)
+  await startEmptyWithBench(page)
+  await card(page, 'Bench Press').getByLabel('Reps').fill('5')
+  await card(page, 'Bench Press').getByRole('button', { name: 'Log set' }).click()
+  await page.waitForTimeout(2200)
+  await expect(page.getByRole('timer')).not.toHaveText(/^0:0[01]/)
+
+  await page.getByRole('button', { name: 'Reset timer' }).click()
+  await page.getByRole('button', { name: 'Reset to 0:00' }).click()
+  await expect(page.getByRole('timer')).toHaveText(/^0:0[01]/)
+  await expect(card(page, 'Bench Press').getByRole('button', { name: 'Undo set' })).toHaveCount(1)
+})

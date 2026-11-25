@@ -19,10 +19,10 @@ import { StatTiles } from './StatTiles'
 const METRICS = [
   { value: 'top', label: 'Weight' },
   { value: 'volume', label: 'Volume' },
-  { value: 'e1rm', label: 'Est. 1RM' },
+  { value: 'e1rm', label: '1RM' },
 ] as const
 type Metric = (typeof METRICS)[number]['value']
-const METRIC_TITLE: Record<Metric, string> = { top: 'Top working-set weight', volume: 'Volume (working sets)', e1rm: 'Estimated 1RM (Epley)' }
+const METRIC_TITLE: Record<Metric, string> = { top: 'Top working-set weight', volume: 'Volume (working sets)', e1rm: '1RM · estimated from your sets' }
 
 type Props = {
   exerciseId: string | null

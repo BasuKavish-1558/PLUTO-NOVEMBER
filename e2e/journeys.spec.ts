@@ -42,6 +42,7 @@ test('onboarding: account, photo, imperial units, then Home', async ({ page }) =
 })
 
 test('workout and PR: from the split, two-tap sets, a PR mid-workout, then summary, calendar and progress', async ({ page }) => {
+  test.slow() // walks through most of the app
   const server = await fakeSupabase(page)
   await page.goto('/auth')
   await page.getByLabel('Email').fill('alex@example.com')

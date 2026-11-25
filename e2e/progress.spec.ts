@@ -38,7 +38,7 @@ test('per-exercise charts: weight, volume and estimated 1RM with a table view', 
 
   await page.getByRole('radio', { name: 'Volume' }).click()
   await expect(page.getByRole('table')).toContainText('400 kg') // 80 × 5
-  await page.getByRole('radio', { name: 'Est. 1RM' }).click()
+  await page.getByRole('radio', { name: '1RM', exact: true }).click()
   await expect(page.getByRole('table')).toContainText('99 kg') // 90 × (1 + 3/30)
 
   for (const r of ['1M', '6M', '1Y', 'All']) await page.getByRole('radio', { name: r, exact: true }).click()

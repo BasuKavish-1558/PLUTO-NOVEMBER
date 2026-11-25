@@ -139,7 +139,92 @@
   }
 }
 
-/* Skeletons appear only if loading takes > 150 ms, so fast local reads never flash. */
+/* Launch intro (LaunchIntro.tsx): springy pop, ring that draws itself, staggered rise, soft exit. */
+@keyframes intro-pop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes intro-draw {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0; /* hides the round cap's dot until drawing starts */
+  }
+  1% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+@keyframes intro-rise {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes intro-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+@keyframes intro-out {
+  to {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+.intro-planet {
+  transform-origin: 256px 256px;
+  animation: intro-pop 650ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.intro-ring {
+  stroke-dasharray: 1;
+  animation: intro-draw 700ms cubic-bezier(0.65, 0, 0.35, 1) 250ms both;
+}
+@keyframes intro-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.intro-moon {
+  animation: intro-fade 300ms ease-out 900ms both; /* opacity only: its position comes from <animateMotion> */
+}
+.intro-glow {
+  transform-origin: 256px 256px;
+  animation: intro-breathe 3.2s ease-in-out infinite;
+}
+.intro-rise {
+  animation: intro-rise 450ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.intro-leave {
+  animation: intro-out 380ms ease-in both;
+}
+
+, so fast local reads never flash. */
 @keyframes skeleton-reveal {
   from {
     opacity: 0;

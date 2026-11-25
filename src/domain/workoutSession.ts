@@ -38,6 +38,9 @@ export const pauseTimer = (t: Timer, now: number): Timer => (t.pausedAt === null
 export const resumeTimer = (t: Timer, now: number): Timer =>
   t.pausedAt === null ? t : { ...t, pausedAt: null, pausedMs: t.pausedMs + Math.max(0, now - t.pausedAt) }
 
+/** Back to 0:00, as if the workout started now (for a timer started by accident). Keeps the paused state. */
+export const resetTimer = (t: Timer, now: number): Timer => ({ startedAt: now, pausedAt: t.pausedAt === null ? null : now, pausedMs: 0 })
+
 // Pre-fill (≤ 2-tap logging) -------------------------------------------------
 
 const blank = (id: string, weightKg: number | null, reps: number | null, isWarmup = false): SessionSet => ({

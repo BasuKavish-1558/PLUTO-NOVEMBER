@@ -4,6 +4,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router/dom'
 import { BackgroundPattern } from '@/components/layout/BackgroundPattern'
+import { LaunchIntro } from '@/components/layout/LaunchIntro'
 import { ThemeSync } from '@/components/layout/ThemeSync'
 import { initAuth } from '@/data/auth'
 import { queryClient } from '@/lib/queryClient'
@@ -26,7 +27,9 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <ThemeSync />
       <BackgroundPattern />
-      <RouterProvider router={router} />
+      <LaunchIntro>
+        <RouterProvider router={router} />
+      </LaunchIntro>
     </QueryClientProvider>
   </StrictMode>,
 )

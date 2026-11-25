@@ -5,6 +5,7 @@ import {
   finishedRows,
   initialSets,
   pauseTimer,
+  resetTimer,
   prefill,
   removeExercise,
   resumeTimer,
@@ -56,6 +57,20 @@ describe('timer', () => {
     expect(pauseTimer(paused, T0 + 5000)).toBe(paused)
     const running = resumeTimer(paused, T0 + 2000)
     expect(resumeTimer(running, T0 + 3000)).toBe(running)
+  })
+
+  it('resets to zero and starts counting again from now', () => {
+    const t = { startedAt: T0, pausedAt: null, pausedMs: 90_000 }
+    const reset = resetTimer(t, T0 + 20 * 60_000)
+    expect(elapsedMs(reset, T0 + 20 * 60_000)).toBe(0)
+    expect(elapsedMs(reset, T0 + 21 * 60_000)).toBe(60_000)
+  })
+
+  it('stays paused at zero when reset while paused', () => {
+    const paused = pauseTimer({ startedAt: T0, pausedAt: null, pausedMs: 0 }, T0 + 5 * 60_000)
+    const reset = resetTimer(paused, T0 + 6 * 60_000)
+    expect(elapsedMs(reset, T0 + 10 * 60_000)).toBe(0)
+    expect(elapsedMs(resumeTimer(reset, T0 + 10 * 60_000), T0 + 11 * 60_000)).toBe(60_000)
   })
 
   it('survives a reload because it is only timestamps', () => {
