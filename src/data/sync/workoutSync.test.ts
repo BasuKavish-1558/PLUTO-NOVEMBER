@@ -44,7 +44,7 @@ describe('offline workout logging', () => {
     const w = await logWorkout([80, 85])
     const { workoutId, summary } = await finishWorkout(w, T0 + 30 * 60_000)
 
-    expect(summary).toMatchObject({ exerciseCount: 1, setCount: 2, volumeKg: 80 * 8 + 85 * 8, durationSeconds: 1800 })
+    expect(summary).toEqual({ exerciseCount: 1, setCount: 2, warmupCount: 0, durationSeconds: 1800 }) // no volume anywhere
     expect(await db.activeWorkout.count()).toBe(0)
     expect(await db.workouts.get(workoutId)).toMatchObject({ title: 'Push', local_date: '2026-11-24' })
     expect(await db.set_logs.count()).toBe(2)

@@ -61,7 +61,7 @@ export function WorkoutDetailPage() {
         </p>
       </div>
 
-      <SummaryStats summary={summaryOf(detail)} unit={unit} animate={justFinished} />
+      <SummaryStats summary={summaryOf(detail)} animate={justFinished} />
 
       {prs.length > 0 && (
         <Card className="space-y-2">

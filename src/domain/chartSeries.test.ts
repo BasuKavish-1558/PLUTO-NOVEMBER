@@ -59,13 +59,12 @@ describe('exerciseSeries', () => {
   it('gives one point per session, oldest first, from working sets only', () => {
     const points = exerciseSeries('bench', workouts, exercises, sets, 'All', '2026-11-24')
     expect(points.map((p) => p.workoutId)).toEqual(['w1', 'w2', 'w3'])
-    expect(points[1]).toEqual({ date: '2026-11-01', workoutId: 'w2', topWeightKg: 80, volumeKg: 400 + 600, e1rmKg: 95 })
+    expect(points[1]).toEqual({ date: '2026-11-01', workoutId: 'w2', topWeightKg: 80, e1rmKg: 95 })
   })
 
   it('merges an exercise that appears twice in a workout', () => {
     const w3 = exerciseSeries('bench', workouts, exercises, sets, 'All', '2026-11-24')[2]!
     expect(w3.topWeightKg).toBe(85)
-    expect(w3.volumeKg).toBe(255 + 720)
     expect(w3.e1rmKg).toBe(93.5) // best of 85 × (1 + 3/30) = 93.5 and 60 × (1 + 12/30) = 84
   })
 

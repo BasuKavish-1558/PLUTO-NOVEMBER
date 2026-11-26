@@ -6,7 +6,6 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } f
 import { finishWorkout } from '@/data/repos/workouts'
 import { finishedRows, isEmptySet, loggedSetCount, type ActiveWorkout } from '@/domain/workoutSession'
 import { summarizeWorkout } from '@/domain/workoutStats'
-import { useProfile } from '@/features/profile/queries'
 import { useActiveWorkout } from '@/stores/activeWorkout'
 import { SummaryStats } from './SummaryStats'
 
@@ -15,7 +14,6 @@ type Props = { workout: ActiveWorkout; open: boolean; onOpenChange: (open: boole
 export function FinishDrawer({ workout, open, onOpenChange }: Props) {
   const navigate = useNavigate()
   const clear = useActiveWorkout((s) => s.clear)
-  const unit = useProfile()?.weight_unit ?? 'kg'
   const [confirmDiscard, setConfirmDiscard] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -59,7 +57,7 @@ export function FinishDrawer({ workout, open, onOpenChange }: Props) {
           </DrawerDescription>
         </DrawerHeader>
         <div className="space-y-4 px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-          {logged > 0 && <SummaryStats summary={summary} unit={unit} />}
+          {logged > 0 && <SummaryStats summary={summary} />}
           {logged > 0 && (
             <Button size="lg" className="w-full" disabled={busy} onClick={() => void finish()}>
               Finish and save

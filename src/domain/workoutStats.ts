@@ -1,23 +1,17 @@
 export type StatSet = { weight_kg: number; reps: number; is_warmup: boolean }
 export type StatExercise = { sets: readonly StatSet[] }
 
-/** Warm-ups never count toward volume or charts (WK-4). */
+/** Warm-ups never count toward set totals or charts (WK-4). */
 export const workingSets = <T extends StatSet>(sets: readonly T[]) => sets.filter((s) => !s.is_warmup)
-
-/** weight × reps; bodyweight work logs 0 added load, so it adds no volume (PLAN A20). */
-export const setVolume = (s: StatSet) => s.weight_kg * s.reps
-
-export const volumeOf = (sets: readonly StatSet[]) => workingSets(sets).reduce((sum, s) => sum + setVolume(s), 0)
 
 export type WorkoutSummary = {
   durationSeconds: number
   exerciseCount: number
   setCount: number // working sets
   warmupCount: number
-  volumeKg: number
 }
 
-/** WK-7: duration, exercises done, total sets, total volume. Exercises without sets don't count. */
+/** WK-7: duration, exercises done, working and warm-up sets (volume removed by product decision). Exercises without sets don't count. */
 export function summarizeWorkout(exercises: readonly StatExercise[], durationSeconds: number): WorkoutSummary {
   const all = exercises.flatMap((e) => e.sets)
   const working = workingSets(all)
@@ -26,7 +20,6 @@ export function summarizeWorkout(exercises: readonly StatExercise[], durationSec
     exerciseCount: exercises.filter((e) => e.sets.length > 0).length,
     setCount: working.length,
     warmupCount: all.length - working.length,
-    volumeKg: Math.round(volumeOf(all) * 10) / 10,
   }
 }
 

@@ -1,6 +1,6 @@
 import { parseLocalDate, toLocalDate, type LocalDate } from './dates'
 import { estimateOneRepMax } from './oneRepMax'
-import { volumeOf, workingSets, type StatSet } from './workoutStats'
+import { workingSets, type StatSet } from './workoutStats'
 
 export const RANGES = ['1M', '3M', '6M', '1Y', 'All'] as const
 export type Range = (typeof RANGES)[number]
@@ -22,11 +22,11 @@ type WorkoutRef = { id: string; local_date: LocalDate; started_at: string }
 type ExerciseRef = { id: string; workout_id: string; exercise_id: string }
 type SetRef = StatSet & { workout_exercise_id: string }
 
-export type ExercisePoint = { date: LocalDate; workoutId: string; topWeightKg: number; volumeKg: number; e1rmKg: number }
+export type ExercisePoint = { date: LocalDate; workoutId: string; topWeightKg: number; e1rmKg: number }
 
 /**
  * One point per session that has working sets of this exercise (warm-ups never count).
- * Top weight = heaviest working set; volume = Σ weight × reps; est. 1RM = best Epley of any working set.
+ * Top weight = heaviest working set; est. 1RM = best Epley of any working set.
  */
 export function exerciseSeries(
   exerciseId: string,
@@ -54,7 +54,6 @@ export function exerciseSeries(
           date: w.local_date,
           workoutId: w.id,
           topWeightKg: Math.max(...working.map((s) => s.weight_kg)),
-          volumeKg: Math.round(volumeOf(working) * 10) / 10,
           e1rmKg: Math.round(Math.max(...working.map((s) => estimateOneRepMax(s.weight_kg, s.reps))) * 10) / 10,
         },
       ]

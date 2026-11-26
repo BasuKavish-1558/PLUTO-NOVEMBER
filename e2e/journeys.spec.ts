@@ -90,7 +90,7 @@ test('workout and PR: from the split, two-tap sets, a PR mid-workout, then summa
 
   // Summary
   await expect(page.getByText('Workout saved. Nice work!')).toBeVisible()
-  await expect(page.getByText('1,920 kg').or(page.getByText('1920 kg'))).toBeVisible() // 4 × 80 × 6
+  await expect(page.getByText('Sets', { exact: true }).locator('..')).toContainText('4') // 4 working sets
   await expect(page.getByRole('heading', { name: 'Personal records' })).toBeVisible()
   await expect(page.getByText('Paused first rep')).toBeVisible()
 

@@ -23,7 +23,8 @@ async function benchWorkout(page: Page, weight: string, reps: string, finish = t
   await expect(page.getByText('Workout saved. Nice work!')).toBeVisible()
 }
 
-test('per-exercise charts: weight, volume and estimated 1RM with a table view', async ({ page }) => {
+test('per-exercise charts: weight and estimated 1RM with a table view', async ({ page }) => {
+  test.slow() // logs two workouts first
   await fakeSupabase(page)
   await signUpAndOnboard(page)
   await benchWorkout(page, '80', '5')
@@ -36,8 +37,7 @@ test('per-exercise charts: weight, volume and estimated 1RM with a table view', 
   await expect(page.getByRole('table')).toContainText('90 kg')
   await expect(page.getByRole('table').getByRole('row')).toHaveCount(3) // header + 2 sessions
 
-  await page.getByRole('radio', { name: 'Volume' }).click()
-  await expect(page.getByRole('table')).toContainText('400 kg') // 80 × 5
+  await expect(page.getByRole('radio', { name: 'Volume' })).toHaveCount(0) // volume removed everywhere
   await page.getByRole('radio', { name: '1RM', exact: true }).click()
   await expect(page.getByRole('table')).toContainText('99 kg') // 90 × (1 + 3/30)
 

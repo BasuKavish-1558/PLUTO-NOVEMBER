@@ -145,7 +145,7 @@ export function ExerciseCard({ exercise, name, unit, previous, mode, onChange, o
         <DrawerContent className="mx-auto max-w-md">
           <DrawerHeader className="text-left">
             <DrawerTitle>{name}</DrawerTitle>
-            <DrawerDescription>Warm-up sets don't count toward volume.</DrawerDescription>
+            <DrawerDescription>Warm-up sets don't count toward your sets or charts.</DrawerDescription>
           </DrawerHeader>
           {optionsSet && (
             <div className="flex flex-col gap-2 px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">

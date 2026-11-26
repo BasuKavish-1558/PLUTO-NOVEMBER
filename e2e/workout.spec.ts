@@ -53,7 +53,8 @@ test('log sets in two taps, warm-up, pause, notes and finish with a summary', as
   await finish(page)
 
   await expect(page.getByText('+1 warm-up')).toBeVisible()
-  await expect(page.getByText('640 kg')).toBeVisible() // warm-up excluded: 80 × 8
+  await expect(page.getByText('Sets', { exact: true }).locator('..')).toContainText('1') // warm-up not counted
+  await expect(page.getByText('Volume')).toHaveCount(0)
   await expect(page.getByText('Felt strong')).toBeVisible()
 
   await expect.poll(() => server.tables.set_logs!.length).toBe(2)

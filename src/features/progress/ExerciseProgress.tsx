@@ -18,11 +18,10 @@ import { StatTiles } from './StatTiles'
 
 const METRICS = [
   { value: 'top', label: 'Weight' },
-  { value: 'volume', label: 'Volume' },
   { value: 'e1rm', label: '1RM' },
 ] as const
 type Metric = (typeof METRICS)[number]['value']
-const METRIC_TITLE: Record<Metric, string> = { top: 'Top working-set weight', volume: 'Volume (working sets)', e1rm: '1RM · estimated from your sets' }
+const METRIC_TITLE: Record<Metric, string> = { top: 'Top working-set weight', e1rm: '1RM · estimated from your sets' }
 
 type Props = {
   exerciseId: string | null
@@ -57,7 +56,7 @@ export function ExerciseProgress({ exerciseId, onExercise, history, prs, unit, t
     () => (id ? exerciseSeries(id, history.workouts, history.exercises, history.sets, range, today) : []),
     [id, history, range, today],
   )
-  const values = points.map((p) => toDisplayWeight(metric === 'top' ? p.topWeightKg : metric === 'volume' ? p.volumeKg : p.e1rmKg, unit))
+  const values = points.map((p) => toDisplayWeight(metric === 'top' ? p.topWeightKg : p.e1rmKg, unit))
   const format = (v: number) => `${Math.round(v * 10) / 10} ${weightLabel(unit)}`
   const exercisePrs = prs.filter((p) => p.exercise_id === id)
 
@@ -118,7 +117,7 @@ export function ExerciseProgress({ exerciseId, onExercise, history, prs, unit, t
       )}
       {!exercise && (
         <EmptyState icon={LineChart} title="No progress to chart yet">
-          Finish a workout and your weights, volume and estimated 1RM show up here. You can also pick any exercise above.
+          Finish a workout and your weights and estimated 1RM show up here. You can also pick any exercise above.
         </EmptyState>
       )}
       <ExerciseSelectDrawer key={select.key} recent={recent} open={select.open} onOpenChange={select.onOpenChange} onSelect={onExercise} />

@@ -4,9 +4,7 @@ import { Link } from 'react-router'
 import { EmptyState } from '@/components/layout/EmptyState'
 import { Button } from '@/components/ui/button'
 import { parseLocalDate } from '@/domain/dates'
-import { formatWeight } from '@/domain/units'
 import { formatDuration } from '@/domain/workoutStats'
-import { useProfile } from '@/features/profile/queries'
 import { useWorkoutHistory } from './queries'
 import { PageSkeleton } from '@/components/ui/skeleton'
 
@@ -14,7 +12,6 @@ const PAGE = 20
 
 export function WorkoutHistory() {
   const history = useWorkoutHistory()
-  const unit = useProfile()?.weight_unit ?? 'kg'
   const [limit, setLimit] = useState(PAGE)
   if (!history) return <PageSkeleton cards={1} />
   if (!history.length) {
@@ -37,7 +34,7 @@ export function WorkoutHistory() {
                 <span className="block text-sm text-muted-foreground tabular-nums">
                   {parseLocalDate(workout.local_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                   {' · '}
-                  {formatDuration(workout.duration_seconds)} · {summary.setCount} sets · {formatWeight(summary.volumeKg, unit)}
+                  {formatDuration(workout.duration_seconds)} · {summary.setCount} sets
                 </span>
               </span>
               <ChevronRight className="size-5 shrink-0 text-muted-foreground" />
