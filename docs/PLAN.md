@@ -618,6 +618,7 @@ The PRD's Phase 3 (gamification, expanded nutrition) stays out of v1. This phase
 - **Bodyweight and timed exercises (Nov 26):** how an exercise is measured comes from `trackingOf()` (`src/domain/tracking.ts`).
   - Every `bodyweight` exercise, custom ones included, is **reps only**: no weight box, weight stored as 0.
   - **Dead Hang** is **time**: a `m:ss` box (plain "45" means seconds, up to 1 hour). The list lives in `TIMED_EXERCISE_IDS`; adding Plank or Side Plank there times them too.
+  - **Weighted Pull-Up, Weighted Chest Dip and Weighted Triceps Dip** are separate built-ins (migration `20261203…01_seed_weighted_bodyweight`). They keep "Bodyweight" equipment but log weight × reps (`WEIGHTED_BODYWEIGHT_IDS`), so the plain versions stay reps only. A custom exercise that needs added weight uses other equipment.
   - Everything else stays weight × reps.
   - **Storage** (migration `20261202…01_timed_sets`): `set_logs.duration_seconds` and `personal_records.duration_seconds`. A hold is stored as **one rep plus its duration**, so reps stays a required positive number everywhere. A check ties duration to `reps = 1`. The column is only sent on timed sets, so normal sets still sync before the migration is pushed.
   - **PRs:** bodyweight exercises log "most reps" (weight 0); timed ones log a new `longest_hold` type.

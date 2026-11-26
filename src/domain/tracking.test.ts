@@ -11,6 +11,12 @@ describe('trackingOf', () => {
     expect(trackingOf({ id: 'cfe584af-8b5b-56d6-bb56-38b1ab417dbc', equipment: 'bodyweight' })).toBe('time')
   })
 
+  it('keeps a weight box for the weighted bodyweight lifts, even though their equipment is Bodyweight', () => {
+    for (const id of ['bf323334-f1e1-5084-9bd9-94ddbf1baec2', '4fb92502-3076-5611-9c76-0c0584d2cf42', 'b65792fc-76d6-593e-af3e-9395c251bfee']) {
+      expect(trackingOf({ id, equipment: 'bodyweight' })).toBe('weight_reps')
+    }
+  })
+
   it('keeps weight × reps for everything with equipment', () => {
     for (const equipment of ['barbell', 'dumbbell', 'machine', 'cable']) expect(trackingOf({ id: 'x', equipment })).toBe('weight_reps')
   })

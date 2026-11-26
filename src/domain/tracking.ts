@@ -10,9 +10,23 @@ export type Tracking = 'weight_reps' | 'reps' | 'time'
  */
 export const TIMED_EXERCISE_IDS: ReadonlySet<string> = new Set(['cfe584af-8b5b-56d6-bb56-38b1ab417dbc'])
 
-/** Every bodyweight exercise (including custom ones) is reps only; the listed holds are timed. */
+/**
+ * Bodyweight movements you load with a belt or vest: Weighted Pull-Up and the two weighted dips.
+ * They keep "Bodyweight" equipment but are logged with the added weight, unlike their plain versions.
+ */
+export const WEIGHTED_BODYWEIGHT_IDS: ReadonlySet<string> = new Set([
+  'bf323334-f1e1-5084-9bd9-94ddbf1baec2', // Weighted Pull-Up
+  '4fb92502-3076-5611-9c76-0c0584d2cf42', // Weighted Chest Dip
+  'b65792fc-76d6-593e-af3e-9395c251bfee', // Weighted Triceps Dip
+])
+
+/**
+ * Every other bodyweight exercise (including custom ones) is reps only; the listed holds are timed.
+ * A custom exercise that needs added weight can simply use other equipment.
+ */
 export function trackingOf(exercise: { id: string; equipment: string }): Tracking {
   if (TIMED_EXERCISE_IDS.has(exercise.id)) return 'time'
+  if (WEIGHTED_BODYWEIGHT_IDS.has(exercise.id)) return 'weight_reps'
   return exercise.equipment === 'bodyweight' ? 'reps' : 'weight_reps'
 }
 

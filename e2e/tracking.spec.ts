@@ -159,3 +159,36 @@ test('personal records: longest hold for Dead Hang, most reps for bodyweight, ch
   if (!(await table.isVisible())) await page.getByText('Show as table').click() // it may still be open from the other chart
   await expect(table).toContainText('12 reps')
 })
+
+test('weighted pull-ups and dips are separate exercises that keep a weight box', async ({ page }) => {
+  test.slow()
+  const server = await fakeSupabase(page)
+  await signUpAndOnboard(page)
+
+  await page.goto('/workout/library')
+  await page.getByLabel('Search exercises').fill('weighted')
+  await expect(page.getByText('3 exercises')).toBeVisible()
+  for (const name of ['Weighted Pull-Up', 'Weighted Chest Dip', 'Weighted Triceps Dip']) {
+    await expect(page.getByRole('button', { name: new RegExp(`^${name}`) })).toBeVisible()
+  }
+
+  await startEmpty(page)
+  await addExercise(page, 'weighted pull', 'Add Weighted Pull-Up')
+  await addExercise(page, 'pull-up', 'Add Pull-Up')
+  const weighted = card(page, 'Weighted Pull-Up')
+  await expect(weighted.getByLabel('Weight (kg)')).toHaveCount(1)
+  await expect(weighted.getByLabel('Reps')).toHaveCount(1)
+  await weighted.getByLabel('Weight (kg)').fill('20')
+  await weighted.getByLabel('Reps').fill('6')
+  await weighted.getByRole('button', { name: 'Log set' }).click()
+
+  const plain = card(page, 'Pull-Up')
+  await expect(plain.getByLabel(/^Weight/)).toHaveCount(0) // the plain one stays reps only
+  await plain.getByLabel('Reps').fill('12')
+  await plain.getByRole('button', { name: 'Log set' }).click()
+
+  await finish(page)
+  await expect(card(page, 'Weighted Pull-Up')).toContainText('20 kg × 6')
+  await expect(card(page, 'Pull-Up')).toContainText('12 reps')
+  await expect.poll(() => server.tables.set_logs!.map((s) => [s.weight_kg, s.reps]).sort()).toEqual([[0, 12], [20, 6]])
+})

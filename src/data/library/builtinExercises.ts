@@ -164,4 +164,8 @@ export const BUILTIN_EXERCISES: readonly BuiltinExercise[] = [
   { id: '39c2bd95-d74a-5128-84c6-9ed56314e31f', name: 'Pallof Press', muscle: 'abs_core', equipment: 'cable' },
   { id: 'c8d7d3bd-91d4-561c-b519-76c52222e41c', name: 'Cable Woodchopper', muscle: 'abs_core', equipment: 'cable' },
   { id: 'e9ecc197-3e00-5dac-8e75-4c10b64451b4', name: 'Machine Crunch', muscle: 'abs_core', equipment: 'machine' },
+  // Added after launch (migration 20261203…01_seed_weighted_bodyweight). Logged with weight; see WEIGHTED_BODYWEIGHT_IDS.
+  { id: 'bf323334-f1e1-5084-9bd9-94ddbf1baec2', name: 'Weighted Pull-Up', muscle: 'back', equipment: 'bodyweight', secondary: ['biceps'] },
+  { id: '4fb92502-3076-5611-9c76-0c0584d2cf42', name: 'Weighted Chest Dip', muscle: 'chest', equipment: 'bodyweight', secondary: ['triceps', 'shoulders'] },
+  { id: 'b65792fc-76d6-593e-af3e-9395c251bfee', name: 'Weighted Triceps Dip', muscle: 'triceps', equipment: 'bodyweight', secondary: ['chest', 'shoulders'] },
 ]

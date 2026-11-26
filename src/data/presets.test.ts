@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import seedSql from '../../supabase/migrations/20261125000002_seed_exercises.sql?raw'
 import { trackingOf } from '@/domain/tracking'
 import { BUILTIN_EXERCISES } from './library/builtinExercises'
 import { buildCustomRows, buildPresetRows, PRESETS } from './presets'
 
 let n = 0
 const uuid = () => `id-${n++}`
+
+// Every migration that seeds exercises (the launch seed plus later additions).
+const seeds = import.meta.glob('../../supabase/migrations/*seed*.sql', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
+const seedSql = Object.keys(seeds).sort().map((k) => seeds[k]).join('')
 
 describe('built-in library', () => {
   it('has about 150 exercises with unique ids and names', () => {
@@ -28,8 +31,15 @@ describe('how built-in exercises are measured', () => {
     expect(tracking['Dead Hang']).toBe('time')
   })
 
+  it('the weighted bodyweight lifts keep a weight box, as separate exercises from the plain ones', () => {
+    const weighted = BUILTIN_EXERCISES.filter((e) => e.name.startsWith('Weighted '))
+    expect(weighted.map((e) => e.name).sort()).toEqual(['Weighted Chest Dip', 'Weighted Pull-Up', 'Weighted Triceps Dip'])
+    for (const e of weighted) expect(tracking[e.name], e.name).toBe('weight_reps')
+    for (const plain of ['Pull-Up', 'Chest Dip', 'Triceps Dip']) expect(tracking[plain], plain).toBe('reps')
+  })
+
   it('every other bodyweight exercise is reps only, and nothing with equipment is', () => {
-    const bodyweight = BUILTIN_EXERCISES.filter((e) => e.equipment === 'bodyweight' && e.name !== 'Dead Hang')
+    const bodyweight = BUILTIN_EXERCISES.filter((e) => e.equipment === 'bodyweight' && e.name !== 'Dead Hang' && !e.name.startsWith('Weighted '))
     expect(bodyweight.length).toBeGreaterThan(20)
     for (const e of bodyweight) expect(tracking[e.name], e.name).toBe('reps')
     for (const e of BUILTIN_EXERCISES.filter((e) => e.equipment !== 'bodyweight')) expect(tracking[e.name], e.name).toBe('weight_reps')
