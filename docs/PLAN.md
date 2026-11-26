@@ -615,6 +615,7 @@ The PRD's Phase 3 (gamification, expanded nutrition) stays out of v1. This phase
 | Calendar cells at 320 px | About 39 px (44 px from 360 px wide). Above WCAG's 24 px minimum. |
 
 **Resolved after Phase 3:**
+- **Longest streak on Home (Nov 26):** a card under the streak and month tiles shows the best run ever, with its first and last workout dates, and a "Current" badge when it's the run you're on. `longestStreak()` in `src/domain/streak.ts` uses the same rule as `computeStreak` (scheduled rest days bridge without counting; ties go to the most recent run). It uses the active split's rest days for all history, so switching splits can change old streaks. Hidden until you have a workout.
 - **Volume removed everywhere (Nov 26):** the user dropped volume (Σ weight × reps), overriding WK-7 and the PRD's Volume chart. The workout summary shows duration, exercises and sets. Progress charts top weight and 1RM. History rows show duration and sets. `workout_completed` events no longer carry a volume figure.
 - **Rest days (A5):** a scheduled rest day of the active split bridges the streak without counting. A rest-day workout counts. Today being a rest day shows "streak safe".
 - **Height history:** dropped; height rarely changes.

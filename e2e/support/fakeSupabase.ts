@@ -1,7 +1,7 @@
 import type { BrowserContext, Page, Route } from '@playwright/test'
 
 const API = 'http://127.0.0.1:54321'
-const USER_ID = '7f0c6a9e-4c1b-4a43-9d5e-2f1f2a6b9c11'
+export const USER_ID = '7f0c6a9e-4c1b-4a43-9d5e-2f1f2a6b9c11'
 const cors = {
   'access-control-allow-origin': '*',
   'access-control-allow-headers': '*',

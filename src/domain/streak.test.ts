@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeStreak, monthlyWorkoutCount } from './streak'
+import { computeStreak, longestStreak, monthlyWorkoutCount } from './streak'
 
 const today = '2026-11-24'
 
@@ -102,3 +102,55 @@ describe('monthlyWorkoutCount', () => {
     expect(monthlyWorkoutCount(dates, { year: 2026, month: 10 })).toBe(3)
   })
 })
+
+describe('longestStreak', () => {
+  const sundayRest = new Set([7]) // 2026-11-22 is a Sunday
+
+  it('is null with no workouts', () => {
+    expect(longestStreak([])).toBeNull()
+  })
+
+  it('is a single day for a single workout', () => {
+    expect(longestStreak(['2026-11-10'])).toEqual({ length: 1, start: '2026-11-10', end: '2026-11-10' })
+  })
+
+  it('picks the longest run and reports where it started and ended', () => {
+    const dates = ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-13', '2026-11-14', '2026-11-20', '2026-11-21']
+    expect(longestStreak(dates)).toEqual({ length: 5, start: '2026-11-10', end: '2026-11-14' })
+  })
+
+  it('goes to the most recent run on a tie', () => {
+    expect(longestStreak(['2026-11-01', '2026-11-02', '2026-11-10', '2026-11-11'])).toEqual({ length: 2, start: '2026-11-10', end: '2026-11-11' })
+  })
+
+  it('ignores order and duplicate workouts on one day', () => {
+    expect(longestStreak(['2026-11-12', '2026-11-10', '2026-11-11', '2026-11-11'])).toEqual({ length: 3, start: '2026-11-10', end: '2026-11-12' })
+  })
+
+  it('crosses month and year boundaries', () => {
+    expect(longestStreak(['2026-12-31', '2027-01-01', '2027-01-02'])).toEqual({ length: 3, start: '2026-12-31', end: '2027-01-02' })
+    expect(longestStreak(['2026-10-30', '2026-10-31', '2026-11-01'])?.length).toBe(3)
+  })
+
+  it('bridges scheduled rest days without counting them', () => {
+    // Fri 20, Sat 21, (Sun 22 rest), Mon 23, Tue 24
+    const dates = ['2026-11-20', '2026-11-21', '2026-11-23', '2026-11-24']
+    expect(longestStreak(dates, sundayRest)).toEqual({ length: 4, start: '2026-11-20', end: '2026-11-24' })
+    expect(longestStreak(dates)).toEqual({ length: 2, start: '2026-11-23', end: '2026-11-24' }) // no split: Sunday breaks it
+  })
+
+  it('still breaks on a missed training day', () => {
+    // Mon 23 skipped
+    expect(longestStreak(['2026-11-21', '2026-11-24'], sundayRest)?.length).toBe(1)
+  })
+
+  it('does not stretch to a trailing rest day', () => {
+    expect(longestStreak(['2026-11-20', '2026-11-21'], sundayRest)).toEqual({ length: 2, start: '2026-11-20', end: '2026-11-21' })
+  })
+
+  it('is never shorter than the current streak', () => {
+    const dates = ['2026-11-20', '2026-11-21', '2026-11-23', '2026-11-24']
+    expect(longestStreak(dates, sundayRest)!.length).toBeGreaterThanOrEqual(computeStreak(dates, '2026-11-24', sundayRest).length)
+  })
+})
+

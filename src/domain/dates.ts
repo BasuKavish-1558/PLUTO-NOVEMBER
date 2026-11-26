@@ -50,3 +50,17 @@ export function monthGrid({ year, month }: YearMonth): (LocalDate | null)[] {
   while (cells.length % 7 !== 0) cells.push(null)
   return cells
 }
+
+const shortDate = (d: LocalDate, withYear: boolean, locale?: string) =>
+  parseLocalDate(d).toLocaleDateString(locale, { month: 'short', day: 'numeric', ...(withYear && { year: 'numeric' }) })
+
+/**
+ * "Mar 3 – Mar 14, 2026" (in the user's locale unless one is given); both years when it crosses
+ * New Year; one date for a single day.
+ */
+export function formatDateRange(start: LocalDate, end: LocalDate, locale?: string) {
+  if (start === end) return shortDate(start, true, locale)
+  const sameYear = start.slice(0, 4) === end.slice(0, 4)
+  return `${shortDate(start, !sameYear, locale)} – ${shortDate(end, true, locale)}`
+}
+

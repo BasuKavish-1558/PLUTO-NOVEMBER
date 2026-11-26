@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { loadEnv } from 'vite'
 import { defineConfig } from 'vitest/config'
-import { contentSecurityPolicy } from './csp'
+import { contentSecurityPolicy } from './csp.ts'
 
 export default defineConfig(({ mode }) => ({
   plugins: [

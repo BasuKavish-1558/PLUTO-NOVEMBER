@@ -35,6 +35,49 @@ export function computeStreak(
   return { length, status: days.has(today) ? 'active' : isRest(today) ? 'resting' : 'at_risk' }
 }
 
+export type LongestStreak = {
+  /** Days with a workout in the run (rest days bridge it but don't add to it). */
+  length: number
+  /** First and last workout day of the run. */
+  start: LocalDate
+  end: LocalDate
+}
+
+/**
+ * The best run in all of history, by the same rule as computeStreak: scheduled rest days between
+ * two workout days don't break it and don't count. Ties go to the most recent run. Null with no workouts.
+ */
+export function longestStreak(
+  workoutDates: Iterable<LocalDate>,
+  restWeekdays: ReadonlySet<number> = new Set(),
+): LongestStreak | null {
+  const days = [...new Set(workoutDates)].sort()
+  if (!days.length) return null
+
+  /** Every day strictly between `from` and `to` is a scheduled rest day. */
+  const bridged = (from: LocalDate, to: LocalDate) => {
+    for (let d = addDays(from, 1); d < to; d = addDays(d, 1)) if (!restWeekdays.has(isoWeekday(d))) return false
+    return true
+  }
+
+  let best: LongestStreak | null = null
+  const consider = (run: LongestStreak) => {
+    if (!best || run.length >= best.length) best = { ...run }
+  }
+
+  let run: LongestStreak = { length: 1, start: days[0]!, end: days[0]! }
+  for (const d of days.slice(1)) {
+    if (bridged(run.end, d)) {
+      run = { ...run, length: run.length + 1, end: d }
+    } else {
+      consider(run)
+      run = { length: 1, start: d, end: d }
+    }
+  }
+  consider(run)
+  return best
+}
+
 /** Number of workouts (not distinct days) whose local date falls in the month. */
 export function monthlyWorkoutCount(workoutDates: Iterable<LocalDate>, ym: YearMonth): number {
   let count = 0
