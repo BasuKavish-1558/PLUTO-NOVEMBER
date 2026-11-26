@@ -4,6 +4,7 @@ import { Navigate } from 'react-router'
 import { useSheet } from '@/components/layout/useSheet'
 import { Button } from '@/components/ui/button'
 import { loadPrevious } from '@/data/repos/workouts'
+import { trackingOf } from '@/domain/tracking'
 import { addExercise, elapsedMs, initialSets, pauseTimer, resumeTimer, type ActiveWorkout, type SessionExercise } from '@/domain/workoutSession'
 import { formatClock } from '@/domain/workoutStats'
 import { useExerciseMap } from '@/features/library/queries'
@@ -44,10 +45,11 @@ function Live({ workout }: { workout: ActiveWorkout }) {
   const sessionPrs = allPrs.filter((p) => workout.prIds?.includes(p.id))
   const prSheet = useSheet()
   const [prFor, setPrFor] = useState<SessionExercise | null>(null)
-  // Pre-fill with the heaviest set logged so far (else the last row).
+  // Pre-fill with the best set logged so far (else the last row): heaviest, most reps, or longest hold.
   const prefillFor = (e: SessionExercise) => {
-    const best = e.sets.filter((s) => s.done && !s.isWarmup).sort((a, b) => (b.weightKg ?? 0) - (a.weightKg ?? 0))[0] ?? e.sets.at(-1)
-    return { weightKg: best?.weightKg ?? null, reps: best?.reps ?? null }
+    const score = (s: SessionExercise['sets'][number]) => (e.tracking === 'time' ? (s.durationSeconds ?? 0) : e.tracking === 'reps' ? (s.reps ?? 0) : (s.weightKg ?? 0))
+    const best = e.sets.filter((s) => s.done && !s.isWarmup).sort((a, b) => score(b) - score(a))[0] ?? e.sets.at(-1)
+    return { weightKg: best?.weightKg ?? null, reps: best?.reps ?? null, durationSeconds: best?.durationSeconds ?? null }
   }
 
   const togglePause = () =>
@@ -109,7 +111,8 @@ function Live({ workout }: { workout: ActiveWorkout }) {
         onAdd={async (ex) => {
           const prev = (await loadPrevious([ex.id])).get(ex.id)
           const uuid = () => crypto.randomUUID()
-          update((w) => addExercise(w, { id: uuid(), exerciseId: ex.id, sets: initialSets(prev?.sets, undefined, uuid) }))
+          const tracking = trackingOf(ex)
+          update((w) => addExercise(w, { id: uuid(), exerciseId: ex.id, tracking, sets: initialSets(tracking, prev?.sets, undefined, uuid) }))
         }}
       />
       {prFor && (
@@ -117,6 +120,7 @@ function Live({ workout }: { workout: ActiveWorkout }) {
           key={`pr-${prSheet.key}`}
           exerciseId={prFor.exerciseId}
           exerciseName={exercises.get(prFor.exerciseId)?.name ?? 'Exercise'}
+          tracking={prFor.tracking}
           prefill={prefillFor(prFor)}
           allPrs={allPrs}
           unit={unit}

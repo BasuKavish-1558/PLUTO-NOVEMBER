@@ -4,12 +4,14 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
-import { formatWeight, weightLabel, type WeightUnit } from '@/domain/units'
+import { formatSetText } from '@/domain/tracking'
+import { weightLabel, type WeightUnit } from '@/domain/units'
 import type { PreviousSession } from '@/domain/workoutHistory'
 import { addSet, removeExercise, removeSet, toggleLogged, updateSet, updateSetAndFill, type Session, type SessionExercise } from '@/domain/workoutSession'
 import type { PersonalRecord } from '@/data/db'
 import { prValue } from '@/features/prs/prText'
 import { SetRow } from './SetRow'
+import { setGrid } from './setGrid'
 
 type Props = {
   exercise: SessionExercise
@@ -77,7 +79,7 @@ export function ExerciseCard({ exercise, name, unit, previous, mode, onChange, o
                 Last time ({shortDate(previous.startedAt)}):{' '}
                 {previous.sets
                   .filter((s) => !s.isWarmup)
-                  .map((s) => `${s.weightKg ? formatWeight(s.weightKg, unit) : 'BW'} × ${s.reps}`)
+                  .map((s) => formatSetText({ weight_kg: s.weightKg, reps: s.reps, duration_seconds: s.durationSeconds }, exercise.tracking, unit))
                   .join(', ') || 'warm-ups only'}
               </span>
             </p>
@@ -107,16 +109,17 @@ export function ExerciseCard({ exercise, name, unit, previous, mode, onChange, o
       )}
 
       <div className="space-y-1">
-        <div className={live ? 'grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] gap-1.5 px-1 text-xs font-medium text-muted-foreground' : 'grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,1fr)] gap-1.5 px-1 text-xs font-medium text-muted-foreground'}>
+        <div className={`grid ${setGrid(exercise.tracking, live)} gap-1.5 px-1 text-xs font-medium text-muted-foreground`}>
           <span className="text-center">Set</span>
-          <span className="text-center">{weightLabel(unit)}</span>
-          <span className="text-center">Reps</span>
+          {exercise.tracking === 'weight_reps' && <span className="text-center">{weightLabel(unit)}</span>}
+          <span className="text-center">{exercise.tracking === 'time' ? 'Time' : 'Reps'}</span>
           {live && <span />}
         </div>
         {exercise.sets.map((set, i) => (
           <SetRow
             key={set.id}
             set={set}
+            tracking={exercise.tracking}
             label={rowLabels[i]!}
             previous={previous?.sets[i]}
             unit={unit}

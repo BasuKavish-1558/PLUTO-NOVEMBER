@@ -1,15 +1,20 @@
 import type { LocalDate } from './dates'
+import type { Tracking } from './tracking'
 
-/** One row in the logger. Weight is added load in kg; null until typed or pre-filled. */
+/**
+ * One row in the logger. Which fields apply depends on the exercise's tracking: weight and reps,
+ * reps only, or time. Weight is added load in kg; fields are null until typed or pre-filled.
+ */
 export type SessionSet = {
   id: string
   weightKg: number | null
   reps: number | null
+  durationSeconds: number | null
   isWarmup: boolean
   done: boolean
   loggedAt: string | null
 }
-export type SessionExercise = { id: string; exerciseId: string; sets: SessionSet[] }
+export type SessionExercise = { id: string; exerciseId: string; tracking: Tracking; sets: SessionSet[] }
 export type Session = { exercises: SessionExercise[]; notes: string }
 
 /** Timestamps, not a ticking counter, so the time is right after a crash (PLAN A16). */
@@ -27,7 +32,7 @@ export type ActiveWorkout = Session & {
   prIds?: string[]
 }
 
-export type PreviousSet = { weightKg: number; reps: number; isWarmup: boolean }
+export type PreviousSet = { weightKg: number; reps: number; durationSeconds: number | null; isWarmup: boolean }
 export type Targets = { sets: number | null; repsMin: number | null }
 type Uuid = () => string
 
@@ -43,37 +48,49 @@ export const resetTimer = (t: Timer, now: number): Timer => ({ startedAt: now, p
 
 // Pre-fill (≤ 2-tap logging) -------------------------------------------------
 
-const blank = (id: string, weightKg: number | null, reps: number | null, isWarmup = false): SessionSet => ({
+type Values = { weightKg: number | null; reps: number | null; durationSeconds: number | null }
+
+/** Keeps only the fields the exercise is measured by, so a stale value can never ride along. */
+const shape = (tracking: Tracking, v: Values): Values =>
+  tracking === 'time'
+    ? { weightKg: null, reps: null, durationSeconds: v.durationSeconds }
+    : tracking === 'reps'
+      ? { weightKg: null, reps: v.reps, durationSeconds: null }
+      : { weightKg: v.weightKg, reps: v.reps, durationSeconds: null }
+
+const blank = (id: string, tracking: Tracking, v: Values, isWarmup = false): SessionSet => ({
   id,
-  weightKg,
-  reps,
+  ...shape(tracking, v),
   isWarmup,
   done: false,
   loggedAt: null,
 })
 
+const NONE: Values = { weightKg: null, reps: null, durationSeconds: null }
+const fromPrevious = (p: PreviousSet): Values => ({ weightKg: p.weightKg, reps: p.reps, durationSeconds: p.durationSeconds })
+
 /** A new row copies the previous row; the first row copies last session's first working set. */
-export function prefill(sets: readonly SessionSet[], previous?: readonly PreviousSet[], repsTarget: number | null = null) {
+export function prefill(tracking: Tracking, sets: readonly SessionSet[], previous?: readonly PreviousSet[], repsTarget: number | null = null): Values {
   const last = sets.at(-1)
-  if (last) return { weightKg: last.weightKg, reps: last.reps }
+  if (last) return shape(tracking, last)
   const ref = previous?.find((s) => !s.isWarmup) ?? previous?.[0]
-  return ref ? { weightKg: ref.weightKg, reps: ref.reps } : { weightKg: null, reps: repsTarget }
+  return shape(tracking, ref ? fromPrevious(ref) : { ...NONE, reps: repsTarget })
 }
 
 /**
  * Rows for an exercise as a workout starts. With target sets: that many working rows, each from
  * the same working set last session. Without: last session's sets as they were. Otherwise one row.
  */
-export function initialSets(previous: readonly PreviousSet[] | undefined, targets: Targets | undefined, uuid: Uuid): SessionSet[] {
+export function initialSets(tracking: Tracking, previous: readonly PreviousSet[] | undefined, targets: Targets | undefined, uuid: Uuid): SessionSet[] {
   const working = previous?.filter((s) => !s.isWarmup) ?? []
   if (targets?.sets) {
     return Array.from({ length: targets.sets }, (_, i) => {
       const ref = working[i] ?? working.at(-1)
-      return blank(uuid(), ref?.weightKg ?? null, ref?.reps ?? targets.repsMin)
+      return blank(uuid(), tracking, ref ? fromPrevious(ref) : { ...NONE, reps: targets.repsMin })
     })
   }
-  if (previous?.length) return previous.map((s) => blank(uuid(), s.weightKg, s.reps, s.isWarmup))
-  return [blank(uuid(), null, targets?.repsMin ?? null)]
+  if (previous?.length) return previous.map((s) => blank(uuid(), tracking, fromPrevious(s), s.isWarmup))
+  return [blank(uuid(), tracking, { ...NONE, reps: targets?.repsMin ?? null })]
 }
 
 // Edits -----------------------------------------------------------------------
@@ -93,22 +110,19 @@ export const removeExercise = <S extends Session>(s: S, exId: string): S => ({
 })
 
 export const addSet = <S extends Session>(s: S, exId: string, id: string, previous?: readonly PreviousSet[], done = false) =>
-  mapExercise(s, exId, (e) => {
-    const { weightKg, reps } = prefill(e.sets, previous)
-    return { ...e, sets: [...e.sets, { ...blank(id, weightKg, reps), done }] }
-  })
+  mapExercise(s, exId, (e) => ({ ...e, sets: [...e.sets, { ...blank(id, e.tracking, prefill(e.tracking, e.sets, previous)), done }] }))
 
 export const removeSet = <S extends Session>(s: S, exId: string, setId: string) =>
   mapExercise(s, exId, (e) => ({ ...e, sets: e.sets.filter((x) => x.id !== setId) }))
 
-export const updateSet = <S extends Session>(s: S, exId: string, setId: string, patch: Partial<Pick<SessionSet, 'weightKg' | 'reps' | 'isWarmup'>>) =>
+export const updateSet = <S extends Session>(s: S, exId: string, setId: string, patch: Partial<Pick<SessionSet, 'weightKg' | 'reps' | 'durationSeconds' | 'isWarmup'>>) =>
   mapSet(s, exId, setId, (x) => ({ ...x, ...patch }))
 
 /**
- * Typing a weight or reps also fills the *empty*, unlogged rows below it, so after setting the
+ * Typing a weight, reps or time also fills the *empty*, unlogged rows below it, so after setting the
  * first row the rest are one ✓ each. Rows that already have a value are never overwritten.
  */
-export const updateSetAndFill = <S extends Session>(s: S, exId: string, setId: string, patch: Partial<Pick<SessionSet, 'weightKg' | 'reps'>>) =>
+export const updateSetAndFill = <S extends Session>(s: S, exId: string, setId: string, patch: Partial<Pick<SessionSet, 'weightKg' | 'reps' | 'durationSeconds'>>) =>
   mapExercise(s, exId, (e) => {
     const at = e.sets.findIndex((x) => x.id === setId)
     return {
@@ -120,13 +134,14 @@ export const updateSetAndFill = <S extends Session>(s: S, exId: string, setId: s
           ...x,
           weightKg: x.weightKg === null && patch.weightKg != null ? patch.weightKg : x.weightKg,
           reps: x.reps === null && patch.reps != null ? patch.reps : x.reps,
+          durationSeconds: (x.durationSeconds ?? null) === null && patch.durationSeconds != null ? patch.durationSeconds : x.durationSeconds,
         }
       }),
     }
   })
 
-/** No weight (or 0) and no reps (or 0): a blank row. It never counts and is never saved. */
-export const isEmptySet = (set: Pick<SessionSet, 'weightKg' | 'reps'>) => !set.weightKg && !set.reps
+/** No weight, reps or time (or all 0): a blank row. It never counts and is never saved. */
+export const isEmptySet = (set: Pick<SessionSet, 'weightKg' | 'reps' | 'durationSeconds'>) => !set.weightKg && !set.reps && !set.durationSeconds
 
 /** Drops blank rows (and exercises left with none), e.g. before saving an edited workout. */
 export const withoutEmptySets = <S extends Session>(s: S): S => ({
@@ -134,14 +149,22 @@ export const withoutEmptySets = <S extends Session>(s: S): S => ({
   exercises: s.exercises.map((e) => ({ ...e, sets: e.sets.filter((x) => !isEmptySet(x)) })).filter((e) => e.sets.length > 0),
 })
 
-export const canLog = (set: SessionSet) => set.reps !== null && Number.isInteger(set.reps) && set.reps >= 1
+const wholePositive = (n: number | null | undefined) => n !== null && n !== undefined && Number.isInteger(n) && n >= 1
 
-/** The ✓ tap: logs a valid row (empty weight = bodyweight, 0 kg) or un-logs a logged one. */
+/** A timed set needs a time; every other set needs reps (weight may be empty). */
+export const canLog = (set: SessionSet, tracking: Tracking = 'weight_reps') =>
+  tracking === 'time' ? wholePositive(set.durationSeconds) : wholePositive(set.reps)
+
+/** The ✓ tap: logs a valid row (weight only for weighted exercises; empty = 0 kg) or un-logs a logged one. */
 export function toggleLogged<S extends Session>(s: S, exId: string, setId: string, nowIso: string): S {
-  return mapSet(s, exId, setId, (x) => {
-    if (x.done) return { ...x, done: false, loggedAt: null }
-    return canLog(x) ? { ...x, done: true, weightKg: x.weightKg ?? 0, loggedAt: nowIso } : x
-  })
+  return mapExercise(s, exId, (e) => ({
+    ...e,
+    sets: e.sets.map((x) => {
+      if (x.id !== setId) return x
+      if (x.done) return { ...x, done: false, loggedAt: null }
+      return canLog(x, e.tracking) ? { ...x, done: true, weightKg: e.tracking === 'weight_reps' ? (x.weightKg ?? 0) : 0, loggedAt: nowIso } : x
+    }),
+  }))
 }
 
 export const loggedSetCount = (s: Session) => s.exercises.reduce((n, e) => n + e.sets.filter((x) => x.done).length, 0)
@@ -170,6 +193,7 @@ export function finishedRows(w: ActiveWorkout, now: number) {
     set_number: number
     weight_kg: number
     reps: number
+    duration_seconds?: number // only on timed sets
     is_warmup: boolean
     loggedAt: string
   }[] = []
@@ -183,8 +207,10 @@ export function finishedRows(w: ActiveWorkout, now: number) {
         user_id: w.userId,
         workout_exercise_id: e.id,
         set_number: i + 1,
-        weight_kg: x.weightKg ?? 0,
-        reps: x.reps!,
+        // A timed hold is stored as one rep with its duration; reps-only exercises carry no weight.
+        weight_kg: e.tracking === 'weight_reps' ? (x.weightKg ?? 0) : 0,
+        reps: e.tracking === 'time' ? 1 : x.reps!,
+        ...(e.tracking === 'time' ? { duration_seconds: x.durationSeconds! } : {}),
         is_warmup: x.isWarmup,
         loggedAt: x.loggedAt ?? workout.ended_at,
       }),

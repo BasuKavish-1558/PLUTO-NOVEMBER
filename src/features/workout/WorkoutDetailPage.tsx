@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { deleteWorkout } from '@/data/repos/workouts'
 import { parseLocalDate } from '@/domain/dates'
-import { formatWeight } from '@/domain/units'
+import { formatSetText, trackingOf } from '@/domain/tracking'
 import { useExerciseMap } from '@/features/library/queries'
 import { useProfile } from '@/features/profile/queries'
 import { usePrs } from '@/features/progress/queries'
@@ -85,18 +85,18 @@ export function WorkoutDetailPage() {
 
       {detail.exercises.map((e) => {
         let n = 0
+        const exercise = exercises.get(e.exercise_id)
+        const tracking = exercise ? trackingOf(exercise) : 'weight_reps'
         return (
           <Card key={e.id} className="space-y-2">
-            <h2 className="font-semibold">{exercises.get(e.exercise_id)?.name ?? 'Exercise'}</h2>
+            <h2 className="font-semibold">{exercise?.name ?? 'Exercise'}</h2>
             <ol className="space-y-1 text-sm tabular-nums">
               {detail.sets
                 .filter((s) => s.workout_exercise_id === e.id)
                 .map((s) => (
                   <li key={s.id} className={s.is_warmup ? 'flex gap-3 text-muted-foreground' : 'flex gap-3'}>
                     <span className="w-6 font-medium text-muted-foreground">{s.is_warmup ? 'W' : ++n}</span>
-                    <span>
-                      {s.weight_kg ? formatWeight(s.weight_kg, unit) : 'Bodyweight'} × {s.reps}
-                    </span>
+                    <span>{formatSetText(s, tracking, unit, 'Bodyweight')}</span>
                   </li>
                 ))}
             </ol>

@@ -27,6 +27,7 @@ const set = (weightKg: number | null, reps: number | null, extra: Partial<Sessio
   id: uuid(),
   weightKg,
   reps,
+  durationSeconds: null,
   isWarmup: false,
   done: false,
   loggedAt: null,
@@ -83,38 +84,38 @@ describe('timer', () => {
 
 describe('pre-fill', () => {
   const previous = [
-    { weightKg: 40, reps: 10, isWarmup: true },
-    { weightKg: 80, reps: 8, isWarmup: false },
-    { weightKg: 82.5, reps: 6, isWarmup: false },
+    { weightKg: 40, reps: 10, durationSeconds: null, isWarmup: true },
+    { weightKg: 80, reps: 8, durationSeconds: null, isWarmup: false },
+    { weightKg: 82.5, reps: 6, durationSeconds: null, isWarmup: false },
   ]
 
   it('copies the previous row in this session first', () => {
-    expect(prefill([set(90, 5)], previous)).toEqual({ weightKg: 90, reps: 5 })
+    expect(prefill('weight_reps', [set(90, 5)], previous)).toEqual({ weightKg: 90, reps: 5, durationSeconds: null })
   })
 
   it('otherwise uses last session’s first working set, then the rep target', () => {
-    expect(prefill([], previous)).toEqual({ weightKg: 80, reps: 8 })
-    expect(prefill([], undefined, 10)).toEqual({ weightKg: null, reps: 10 })
+    expect(prefill('weight_reps', [], previous)).toEqual({ weightKg: 80, reps: 8, durationSeconds: null })
+    expect(prefill('weight_reps', [], undefined, 10)).toEqual({ weightKg: null, reps: 10, durationSeconds: null })
   })
 
   it('starts target sets from the matching working sets of last session', () => {
-    const rows = initialSets(previous, { sets: 3, repsMin: 8 }, uuid)
+    const rows = initialSets('weight_reps', previous, { sets: 3, repsMin: 8 }, uuid)
     expect(rows.map((r) => [r.weightKg, r.reps])).toEqual([[80, 8], [82.5, 6], [82.5, 6]])
   })
 
   it('without targets, repeats last session including warm-ups', () => {
-    expect(initialSets(previous, undefined, uuid).map((r) => r.isWarmup)).toEqual([true, false, false])
+    expect(initialSets('weight_reps', previous, undefined, uuid).map((r) => r.isWarmup)).toEqual([true, false, false])
   })
 
   it('with no history, gives one row with the rep target', () => {
-    expect(initialSets(undefined, { sets: null, repsMin: 12 }, uuid)).toMatchObject([{ weightKg: null, reps: 12 }])
+    expect(initialSets('weight_reps', undefined, { sets: null, repsMin: 12 }, uuid)).toMatchObject([{ weightKg: null, reps: 12 }])
   })
 })
 
 describe('logging', () => {
   it('logs a pre-filled row in one tap and un-logs on a second', () => {
     const s = set(80, 8)
-    let w = workout([{ id: 'e1', exerciseId: 'bench', sets: [s] }])
+    let w = workout([{ id: 'e1', exerciseId: 'bench', tracking: 'weight_reps', sets: [s] }])
     w = toggleLogged(w, 'e1', s.id, '2026-11-24T17:05:00.000Z')
     expect(w.exercises[0]!.sets[0]).toMatchObject({ done: true, loggedAt: '2026-11-24T17:05:00.000Z' })
     w = toggleLogged(w, 'e1', s.id, '2026-11-24T17:06:00.000Z')
@@ -124,14 +125,14 @@ describe('logging', () => {
   it('treats an empty weight as bodyweight but needs reps', () => {
     const bw = set(null, 12)
     const noReps = set(60, null)
-    let w = workout([{ id: 'e1', exerciseId: 'pullup', sets: [bw, noReps] }])
+    let w = workout([{ id: 'e1', exerciseId: 'pullup', tracking: 'weight_reps', sets: [bw, noReps] }])
     w = toggleLogged(w, 'e1', bw.id, 'now')
     w = toggleLogged(w, 'e1', noReps.id, 'now')
     expect(w.exercises[0]!.sets.map((x) => [x.done, x.weightKg])).toEqual([[true, 0], [false, 60]])
   })
 
   it('adds, edits and removes', () => {
-    let w = workout([{ id: 'e1', exerciseId: 'bench', sets: [set(80, 8)] }])
+    let w = workout([{ id: 'e1', exerciseId: 'bench', tracking: 'weight_reps', sets: [set(80, 8)] }])
     w = addSet(w, 'e1', 'new')
     expect(w.exercises[0]!.sets[1]).toMatchObject({ id: 'new', weightKg: 80, reps: 8, done: false })
     w = updateSet(w, 'e1', 'new', { isWarmup: true, reps: 10 })
@@ -146,8 +147,8 @@ describe('finishedRows', () => {
     const b = set(80, 8)
     const c = set(80, 8, { done: true, loggedAt: '2026-11-24T17:04:00.000Z' })
     const w = workout([
-      { id: 'skip', exerciseId: 'fly', sets: [set(20, 12)] },
-      { id: 'e1', exerciseId: 'bench', sets: [a, b, c] },
+      { id: 'skip', exerciseId: 'fly', tracking: 'weight_reps', sets: [set(20, 12)] },
+      { id: 'e1', exerciseId: 'bench', tracking: 'weight_reps', sets: [a, b, c] },
     ])
     const rows = finishedRows({ ...w, timer: { startedAt: T0, pausedAt: null, pausedMs: 5 * 60_000 } }, T0 + 50 * 60_000)
 
@@ -165,30 +166,30 @@ describe('finishedRows', () => {
 describe('updateSetAndFill', () => {
   it('fills only empty, unlogged working rows below the edited one', () => {
     const rows = [set(null, 6), set(null, 6), set(70, 6), set(null, 6, { done: true }), set(null, 6, { isWarmup: true }), set(null, 6)]
-    const w = updateSetAndFill(workout([{ id: 'e1', exerciseId: 'bench', sets: rows }]), 'e1', rows[0]!.id, { weightKg: 80 })
+    const w = updateSetAndFill(workout([{ id: 'e1', exerciseId: 'bench', tracking: 'weight_reps', sets: rows }]), 'e1', rows[0]!.id, { weightKg: 80 })
     expect(w.exercises[0]!.sets.map((x) => x.weightKg)).toEqual([80, 80, 70, null, null, 80])
   })
 
   it('never touches rows above', () => {
     const rows = [set(null, null), set(null, null)]
-    const w = updateSetAndFill(workout([{ id: 'e1', exerciseId: 'bench', sets: rows }]), 'e1', rows[1]!.id, { reps: 5 })
+    const w = updateSetAndFill(workout([{ id: 'e1', exerciseId: 'bench', tracking: 'weight_reps', sets: rows }]), 'e1', rows[1]!.id, { reps: 5 })
     expect(w.exercises[0]!.sets.map((x) => x.reps)).toEqual([null, 5])
   })
 })
 
 describe('empty sets', () => {
   it('a row with neither weight nor reps (null or 0) is empty', () => {
-    expect(isEmptySet({ weightKg: null, reps: null })).toBe(true)
-    expect(isEmptySet({ weightKg: 0, reps: 0 })).toBe(true)
-    expect(isEmptySet({ weightKg: 0, reps: 12 })).toBe(false) // bodyweight set
-    expect(isEmptySet({ weightKg: 60, reps: null })).toBe(false) // half-filled: still the user's to fix
+    expect(isEmptySet({ weightKg: null, reps: null, durationSeconds: null })).toBe(true)
+    expect(isEmptySet({ weightKg: 0, reps: 0, durationSeconds: null })).toBe(true)
+    expect(isEmptySet({ weightKg: 0, reps: 12, durationSeconds: null })).toBe(false) // bodyweight set
+    expect(isEmptySet({ weightKg: 60, reps: null, durationSeconds: null })).toBe(false) // half-filled: still the user's to fix
   })
 
   it('cannot be logged, and is dropped along with exercises left empty', () => {
     const blank = set(null, null)
     let w = workout([
-      { id: 'e1', exerciseId: 'bench', sets: [set(80, 8, { done: true }), blank] },
-      { id: 'e2', exerciseId: 'fly', sets: [set(0, 0)] },
+      { id: 'e1', exerciseId: 'bench', tracking: 'weight_reps', sets: [set(80, 8, { done: true }), blank] },
+      { id: 'e2', exerciseId: 'fly', tracking: 'weight_reps', sets: [set(0, 0)] },
     ])
     w = toggleLogged(w, 'e1', blank.id, 'now')
     expect(w.exercises[0]!.sets[1]!.done).toBe(false)

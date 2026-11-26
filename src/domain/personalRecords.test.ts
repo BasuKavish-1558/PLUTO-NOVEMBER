@@ -76,3 +76,32 @@ describe('beatsPrevious', () => {
     expect(beatsPrevious({ type: 'most_reps_at_weight', weight_kg: 100, reps: 7 }, { weight_kg: 100, reps: 7 })).toBe(false)
   })
 })
+
+describe('reps-only and timed records', () => {
+  const reps = (n: number, at: string) => pr('most_reps_at_weight', 0, n, at, 'pull-up')
+  const hold = (seconds: number, at: string) => ({ ...pr('longest_hold', 0, 1, at, 'dead-hang'), duration_seconds: seconds })
+
+  it('a reps-only exercise compares plain reps (weight is always 0)', () => {
+    const a = reps(8, '2026-10-01T10:00:00Z')
+    const b = reps(10, '2026-11-01T10:00:00Z')
+    const c = reps(9, '2026-11-24T10:00:00Z')
+    expect(previousRecord(c, [a, b, c])).toBe(b)
+    expect(beatsPrevious(c, b)).toBe(false)
+    expect(beatsPrevious(reps(11, '2026-11-25T10:00:00Z'), b)).toBe(true)
+  })
+
+  it('a timed exercise compares the longest hold, only against its own type', () => {
+    const a = hold(45, '2026-10-01T10:00:00Z')
+    const b = hold(70, '2026-11-01T10:00:00Z')
+    const c = hold(60, '2026-11-24T10:00:00Z')
+    const other = pr('heaviest_weight', 0, 1, '2026-10-15T10:00:00Z', 'dead-hang')
+    expect(previousRecord(c, [a, b, c, other])).toBe(b)
+    expect(previousRecord(a, [a, b, c, other])).toBeNull()
+  })
+
+  it('beating a hold means holding longer', () => {
+    expect(beatsPrevious({ type: 'longest_hold', weight_kg: 0, reps: 1, duration_seconds: 80 }, { weight_kg: 0, reps: 1, duration_seconds: 70 })).toBe(true)
+    expect(beatsPrevious({ type: 'longest_hold', weight_kg: 0, reps: 1, duration_seconds: 70 }, { weight_kg: 0, reps: 1, duration_seconds: 70 })).toBe(false)
+    expect(beatsPrevious({ type: 'longest_hold', weight_kg: 0, reps: 1, duration_seconds: 5 }, null)).toBe(true) // first record
+  })
+})

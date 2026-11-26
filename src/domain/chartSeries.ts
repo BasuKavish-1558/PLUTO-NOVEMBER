@@ -20,13 +20,23 @@ const inRange = (date: LocalDate, start: LocalDate | null, today: LocalDate) => 
 
 type WorkoutRef = { id: string; local_date: LocalDate; started_at: string }
 type ExerciseRef = { id: string; workout_id: string; exercise_id: string }
-type SetRef = StatSet & { workout_exercise_id: string }
+type SetRef = StatSet & { workout_exercise_id: string; duration_seconds?: number | null }
 
-export type ExercisePoint = { date: LocalDate; workoutId: string; topWeightKg: number; e1rmKg: number }
+export type ExercisePoint = {
+  date: LocalDate
+  workoutId: string
+  topWeightKg: number
+  e1rmKg: number
+  /** Most reps in one working set (the chart for reps-only exercises). */
+  topReps: number
+  /** Longest hold in one working set, in seconds (the chart for timed exercises). */
+  topSeconds: number
+}
 
 /**
  * One point per session that has working sets of this exercise (warm-ups never count).
- * Top weight = heaviest working set; est. 1RM = best Epley of any working set.
+ * Top weight = heaviest working set; est. 1RM = best Epley of any working set; top reps and
+ * top seconds are the best single set by reps and by hold time.
  */
 export function exerciseSeries(
   exerciseId: string,
@@ -54,6 +64,8 @@ export function exerciseSeries(
           date: w.local_date,
           workoutId: w.id,
           topWeightKg: Math.max(...working.map((s) => s.weight_kg)),
+          topReps: Math.max(...working.map((s) => s.reps)),
+          topSeconds: Math.max(0, ...working.map((s) => s.duration_seconds ?? 0)),
           e1rmKg: Math.round(Math.max(...working.map((s) => estimateOneRepMax(s.weight_kg, s.reps))) * 10) / 10,
         },
       ]

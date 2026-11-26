@@ -7,10 +7,13 @@ import { Input } from '@/components/ui/input'
 import type { SplitDayExercise } from '@/data/db'
 import { removeFromDay, setTargets } from '@/data/repos/splits'
 import { validateTargets } from '@/domain/split'
+import type { Tracking } from '@/domain/tracking'
 
 type Props = {
   item: SplitDayExercise
   name: string
+  /** A timed exercise (Dead Hang) has a set count but no rep range. */
+  tracking: Tracking
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -19,14 +22,15 @@ const toText = (n: number | null) => (n === null ? '' : String(n))
 const toNumber = (s: string) => (s.trim() === '' ? null : Number(s))
 
 /** SP-4: optional target sets and a rep range; also where an exercise is removed from the day. */
-export function TargetsDrawer({ item, name, open, onOpenChange }: Props) {
+export function TargetsDrawer({ item, name, tracking, open, onOpenChange }: Props) {
   const [sets, setSets] = useState(toText(item.target_sets))
   const [min, setMin] = useState(toText(item.target_reps_min))
   const [max, setMax] = useState(toText(item.target_reps_max))
   const [errors, setErrors] = useState<ReturnType<typeof validateTargets>>({})
 
   async function save() {
-    const targets = { sets: toNumber(sets), repsMin: toNumber(min), repsMax: toNumber(max) }
+    const timed = tracking === 'time'
+    const targets = { sets: toNumber(sets), repsMin: timed ? null : toNumber(min), repsMax: timed ? null : toNumber(max) }
     // A single rep value means "exactly this many".
     if (targets.repsMin === null) targets.repsMin = targets.repsMax
     if (targets.repsMax === null) targets.repsMax = targets.repsMin
@@ -46,6 +50,7 @@ export function TargetsDrawer({ item, name, open, onOpenChange }: Props) {
       <Field label="Sets" htmlFor="target-sets" error={errors.sets}>
         <Input id="target-sets" inputMode="numeric" placeholder="e.g. 3" value={sets} onChange={(e) => setSets(e.target.value)} aria-invalid={!!errors.sets} />
       </Field>
+      {tracking !== 'time' && (
       <Field label="Reps" htmlFor="target-reps-min" error={errors.reps}>
         <div className="flex items-center gap-3">
           <Input id="target-reps-min" aria-label="Reps from" inputMode="numeric" placeholder="8" value={min} onChange={(e) => setMin(e.target.value)} aria-invalid={!!errors.reps} />
@@ -53,6 +58,7 @@ export function TargetsDrawer({ item, name, open, onOpenChange }: Props) {
           <Input aria-label="Reps to" inputMode="numeric" placeholder="12" value={max} onChange={(e) => setMax(e.target.value)} aria-invalid={!!errors.reps} />
         </div>
       </Field>
+      )}
       <Button type="button" variant="ghost" className="w-full text-destructive hover:text-destructive" onClick={() => void remove()}>
         <Trash2 /> Remove from this day
       </Button>

@@ -59,7 +59,7 @@ describe('exerciseSeries', () => {
   it('gives one point per session, oldest first, from working sets only', () => {
     const points = exerciseSeries('bench', workouts, exercises, sets, 'All', '2026-11-24')
     expect(points.map((p) => p.workoutId)).toEqual(['w1', 'w2', 'w3'])
-    expect(points[1]).toEqual({ date: '2026-11-01', workoutId: 'w2', topWeightKg: 80, e1rmKg: 95 })
+    expect(points[1]).toEqual({ date: '2026-11-01', workoutId: 'w2', topWeightKg: 80, e1rmKg: 95, topReps: 8, topSeconds: 0 }) // best reps: the 75 × 8 set
   })
 
   it('merges an exercise that appears twice in a workout', () => {

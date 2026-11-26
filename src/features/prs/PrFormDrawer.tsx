@@ -10,6 +10,7 @@ import type { PersonalRecord } from '@/data/db'
 import { createPr, deletePr, updatePr } from '@/data/repos/prs'
 import { PHOTO_MAX_PX } from '@/data/repos/photos'
 import { beatsPrevious, previousRecord, type PrType } from '@/domain/personalRecords'
+import { formatHold, parseDuration, type Tracking } from '@/domain/tracking'
 import { toDisplayWeight, toStoredWeight, weightLabel, type WeightUnit } from '@/domain/units'
 import { PhotoButtons } from '@/features/profile/PhotoButtons'
 import { useMediaUrl } from '@/features/profile/queries'
@@ -20,8 +21,10 @@ import { PR_TYPES, prDate, prValue } from './prText'
 type Props = {
   exerciseId: string
   exerciseName: string
+  /** How the exercise is measured: decides which record kinds and fields apply. */
+  tracking: Tracking
   pr?: PersonalRecord // edit when set
-  prefill?: { weightKg: number | null; reps: number | null }
+  prefill?: { weightKg: number | null; reps: number | null; durationSeconds?: number | null }
   allPrs: readonly PersonalRecord[]
   unit: WeightUnit
   open: boolean
@@ -29,36 +32,51 @@ type Props = {
   onCreated?: (id: string) => void
 }
 
-/** PR-2/PR-3: exercise, type, weight and reps, optional note and photo. The date is the device clock. */
-export function PrFormDrawer({ exerciseId, exerciseName, pr, prefill, allPrs, unit, open, onOpenChange, onCreated }: Props) {
+type Errors = { weight?: string; reps?: string; time?: string }
+
+/**
+ * PR-2/PR-3: weighted exercises log heaviest weight or most reps at a weight; bodyweight exercises
+ * log most reps; timed exercises (Dead Hang) log the longest hold. Optional note and photo.
+ * The date is the device clock.
+ */
+export function PrFormDrawer({ exerciseId, exerciseName, tracking, pr, prefill, allPrs, unit, open, onOpenChange, onCreated }: Props) {
   const { userId } = useUser()
-  const [type, setType] = useState<PrType>(pr?.type ?? 'heaviest_weight')
+  const fixedType: PrType | null = tracking === 'time' ? 'longest_hold' : tracking === 'reps' ? 'most_reps_at_weight' : null
+  const [type, setType] = useState<PrType>(pr?.type ?? fixedType ?? 'heaviest_weight')
   const [weight, setWeight] = useState(() => {
     const kg = pr?.weight_kg ?? prefill?.weightKg
     return kg === null || kg === undefined ? '' : String(toDisplayWeight(kg, unit))
   })
   const [reps, setReps] = useState(String(pr?.reps ?? prefill?.reps ?? ''))
+  const [time, setTime] = useState(() => {
+    const seconds = pr?.duration_seconds ?? prefill?.durationSeconds
+    return seconds ? formatHold(seconds) : ''
+  })
   const [note, setNote] = useState(pr?.note ?? '')
   const [photo, setPhoto] = useState<Blob | null | undefined>(undefined) // undefined = unchanged
-  const [errors, setErrors] = useState<{ weight?: string; reps?: string }>({})
+  const [errors, setErrors] = useState<Errors>({})
   const [confirmAnyway, setConfirmAnyway] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [loggedAt] = useState(() => pr?.created_at ?? new Date().toISOString())
 
-  const weightKg = weight.trim() === '' ? 0 : toStoredWeight(Number(weight.replace(',', '.')), unit)
-  const repsN = Number(reps)
-  const candidate = { id: pr?.id ?? 'new', exercise_id: exerciseId, type, weight_kg: weightKg, reps: repsN, created_at: loggedAt }
+  // Only what the exercise is measured by is read; the rest is fixed (no weight, or one rep for a hold).
+  const weightKg = tracking === 'weight_reps' ? (weight.trim() === '' ? 0 : toStoredWeight(Number(weight.replace(',', '.')), unit)) : 0
+  const repsN = tracking === 'time' ? 1 : Number(reps)
+  const seconds = tracking === 'time' ? parseDuration(time) : null
+  const candidate = { id: pr?.id ?? 'new', exercise_id: exerciseId, type, weight_kg: weightKg, reps: repsN, duration_seconds: seconds, created_at: loggedAt }
   const previous = previousRecord(candidate, allPrs)
   const beats = beatsPrevious(candidate, previous)
+  const edited = () => setConfirmAnyway(false)
 
   async function save() {
-    const next = {
-      weight: !Number.isFinite(weightKg) || weightKg < 0 || weightKg > 1000 ? 'Enter a weight (empty = bodyweight)' : undefined,
-      reps: !Number.isInteger(repsN) || repsN < 1 || repsN > 1000 ? 'Enter reps from 1 to 1000' : undefined,
+    const next: Errors = {
+      weight: tracking === 'weight_reps' && (!Number.isFinite(weightKg) || weightKg < 0 || weightKg > 1000) ? 'Enter a weight (empty = bodyweight)' : undefined,
+      reps: tracking !== 'time' && (!Number.isInteger(repsN) || repsN < 1 || repsN > 1000) ? 'Enter reps from 1 to 1000' : undefined,
+      time: tracking === 'time' && seconds === null ? 'Enter a time like 45 or 1:30 (up to 1 hour)' : undefined,
     }
-    if (next.weight || next.reps) return setErrors(next)
+    if (next.weight || next.reps || next.time) return setErrors(next)
     if (!beats && !pr && !confirmAnyway) return setConfirmAnyway(true)
-    const input = { type, weight_kg: weightKg, reps: repsN, note: note || null }
+    const input = { type, weight_kg: weightKg, reps: repsN, note: note || null, ...(seconds ? { duration_seconds: seconds } : {}) }
     if (pr) {
       await updatePr(pr, input, photo)
       toast.success('PR updated')
@@ -90,15 +108,29 @@ export function PrFormDrawer({ exerciseId, exerciseName, pr, prefill, allPrs, un
       submitLabel={confirmAnyway ? 'Log anyway' : pr ? 'Save' : 'Log PR'}
       onSubmit={save}
     >
-      <Segmented label="Record type" value={type} options={PR_TYPES} onChange={(t) => { setType(t); setConfirmAnyway(false) }} />
-      <div className="grid grid-cols-2 gap-3">
-        <Field label={`Weight (${weightLabel(unit)})`} htmlFor="pr-weight" error={errors.weight}>
-          <Input id="pr-weight" inputMode="decimal" placeholder="BW" value={weight} onChange={(e) => { setWeight(e.target.value); setConfirmAnyway(false) }} aria-invalid={!!errors.weight} />
+      {tracking === 'weight_reps' && (
+        <>
+          <Segmented label="Record type" value={type} options={PR_TYPES} onChange={(t) => { setType(t); edited() }} />
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={`Weight (${weightLabel(unit)})`} htmlFor="pr-weight" error={errors.weight}>
+              <Input id="pr-weight" inputMode="decimal" placeholder="BW" value={weight} onChange={(e) => { setWeight(e.target.value); edited() }} aria-invalid={!!errors.weight} />
+            </Field>
+            <Field label="Reps" htmlFor="pr-reps" error={errors.reps}>
+              <Input id="pr-reps" inputMode="numeric" value={reps} onChange={(e) => { setReps(e.target.value); edited() }} aria-invalid={!!errors.reps} />
+            </Field>
+          </div>
+        </>
+      )}
+      {tracking === 'reps' && (
+        <Field label="Most reps in one set" htmlFor="pr-reps" error={errors.reps}>
+          <Input id="pr-reps" inputMode="numeric" value={reps} onChange={(e) => { setReps(e.target.value); edited() }} aria-invalid={!!errors.reps} />
         </Field>
-        <Field label="Reps" htmlFor="pr-reps" error={errors.reps}>
-          <Input id="pr-reps" inputMode="numeric" value={reps} onChange={(e) => { setReps(e.target.value); setConfirmAnyway(false) }} aria-invalid={!!errors.reps} />
+      )}
+      {tracking === 'time' && (
+        <Field label="Longest hold (m:ss)" htmlFor="pr-time" error={errors.time} hint={errors.time ? undefined : 'Seconds or minutes:seconds, like 45 or 1:30'}>
+          <Input id="pr-time" inputMode="text" autoComplete="off" placeholder="1:30" value={time} onChange={(e) => { setTime(e.target.value); edited() }} aria-invalid={!!errors.time} />
         </Field>
-      </div>
+      )}
       <p className={`rounded-xl px-4 py-3 text-sm ${beats ? 'bg-primary/10 text-primary-ink' : 'bg-muted text-muted-foreground'}`} role="status">
         {!previous
           ? 'Your first record of this kind.'

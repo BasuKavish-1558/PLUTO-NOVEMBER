@@ -236,6 +236,7 @@ export type Database = {
       personal_records: {
         Row: {
           created_at: string
+          duration_seconds: number | null
           exercise_id: string
           id: string
           local_date: string
@@ -250,6 +251,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          duration_seconds?: number | null
           exercise_id: string
           id?: string
           local_date: string
@@ -264,6 +266,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          duration_seconds?: number | null
           exercise_id?: string
           id?: string
           local_date?: string
@@ -355,6 +358,7 @@ export type Database = {
       set_logs: {
         Row: {
           created_at: string
+          duration_seconds: number | null
           id: string
           is_warmup: boolean
           reps: number
@@ -366,6 +370,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          duration_seconds?: number | null
           id?: string
           is_warmup?: boolean
           reps: number
@@ -377,6 +382,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          duration_seconds?: number | null
           id?: string
           is_warmup?: boolean
           reps?: number

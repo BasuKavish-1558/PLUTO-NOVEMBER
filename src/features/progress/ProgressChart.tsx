@@ -2,7 +2,14 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import { parseLocalDate } from '@/domain/dates'
 
 export type ChartPoint = { date: string; value: number }
-type Props = { title: string; points: ChartPoint[]; format: (v: number) => string; height?: number }
+type Props = {
+  title: string
+  points: ChartPoint[]
+  format: (v: number) => string
+  /** Y-axis tick text; whole numbers by default (m:ss for holds). */
+  axisFormat?: (v: number) => string
+  height?: number
+}
 
 const shortDate = (d: string) => parseLocalDate(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 const longDate = (d: string) => parseLocalDate(d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
@@ -11,7 +18,7 @@ const longDate = (d: string) => parseLocalDate(d).toLocaleDateString(undefined, 
  * One series, so no legend: the title names it. 2px line, 8px dots ringed with the surface,
  * recessive horizontal grid, crosshair + tooltip on hover/touch, and a table view for screen readers.
  */
-export function ProgressChart({ title, points, format, height = 220 }: Props) {
+export function ProgressChart({ title, points, format, axisFormat, height = 220 }: Props) {
   return (
     <figure className="space-y-2">
       <figcaption className="sr-only">{title}</figcaption>
@@ -29,9 +36,9 @@ export function ProgressChart({ title, points, format, height = 220 }: Props) {
               minTickGap={24}
             />
             <YAxis
-              width={44}
+              width={axisFormat ? 52 : 44}
               domain={['auto', 'auto']}
-              tickFormatter={(v: number) => String(Math.round(v))}
+              tickFormatter={axisFormat ?? ((v: number) => String(Math.round(v)))}
               tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
               tickLine={false}
               axisLine={false}

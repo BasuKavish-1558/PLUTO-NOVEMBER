@@ -4,7 +4,8 @@ import { db, type PersonalRecord } from '../db'
 import { extensionFor } from '../media'
 import { commit } from './write'
 
-export type PrInput = { exercise_id: string; type: PrType; weight_kg: number; reps: number; note: string | null }
+/** A longest_hold record also has duration_seconds (and is one rep); the key is left out for other types. */
+export type PrInput = { exercise_id: string; type: PrType; weight_kg: number; reps: number; duration_seconds?: number; note: string | null }
 
 /** PR photos: 1 per PR, same private bucket, outside the 3-per-day cap (PLAN A7). */
 async function queuePhoto(pr: Pick<PersonalRecord, 'id' | 'user_id' | 'photo_path'>, image: Blob | null) {
@@ -45,7 +46,12 @@ export function createPr(userId: string, input: PrInput, photo: Blob | null, now
     // created_at is the device time of logging (rule 3), so insert it explicitly.
     await db.personal_records.put({ ...row, created_at: now.toISOString(), updated_at: now.toISOString() })
     await db.outbox.add({ op: 'upsert', table: 'personal_records', rowId: id, payload: { ...row, created_at: now.toISOString() } })
-    await w.event(userId, 'pr_logged', { pr_id: id, exercise_id: input.exercise_id, type: input.type, weight_kg: input.weight_kg, reps: input.reps }, now.toISOString())
+    await w.event(
+      userId,
+      'pr_logged',
+      { pr_id: id, exercise_id: input.exercise_id, type: input.type, weight_kg: input.weight_kg, reps: input.reps, ...(input.duration_seconds ? { duration_seconds: input.duration_seconds } : {}) },
+      now.toISOString(),
+    )
     return id
   })
 }
@@ -53,7 +59,13 @@ export function createPr(userId: string, input: PrInput, photo: Blob | null, now
 /** PR-6: weight, reps, type and note are editable; the logged date never is. */
 export function updatePr(pr: PersonalRecord, input: Omit<PrInput, 'exercise_id'>, photo: Blob | null | undefined) {
   return commit(async (w) => {
-    const changes: Partial<PersonalRecord> = { type: input.type, weight_kg: input.weight_kg, reps: input.reps, note: input.note?.trim() || null }
+    const changes: Partial<PersonalRecord> = {
+      type: input.type,
+      weight_kg: input.weight_kg,
+      reps: input.reps,
+      ...(input.duration_seconds !== undefined ? { duration_seconds: input.duration_seconds } : {}),
+      note: input.note?.trim() || null,
+    }
     if (photo !== undefined) changes.photo_path = await queuePhoto(pr, photo)
     await w.patch('personal_records', pr.id, changes)
   })

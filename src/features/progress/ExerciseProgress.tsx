@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Segmented } from '@/components/ui/segmented'
 import type { PersonalRecord } from '@/data/db'
 import { exerciseSeries, RANGES, type Range } from '@/domain/chartSeries'
+import { formatHold, trackingOf, type Tracking } from '@/domain/tracking'
 import { toDisplayWeight, weightLabel, type WeightUnit } from '@/domain/units'
 import { useExerciseMap } from '@/features/library/queries'
 import { PrFormDrawer } from '@/features/prs/PrFormDrawer'
@@ -16,12 +17,22 @@ import { ProgressChart } from './ProgressChart'
 import type { TrainingHistory } from './queries'
 import { StatTiles } from './StatTiles'
 
-const METRICS = [
-  { value: 'top', label: 'Weight' },
-  { value: 'e1rm', label: '1RM' },
-] as const
-type Metric = (typeof METRICS)[number]['value']
-const METRIC_TITLE: Record<Metric, string> = { top: 'Top working-set weight', e1rm: '1RM · estimated from your sets' }
+type Metric = 'top' | 'e1rm' | 'reps' | 'time'
+const METRIC_TITLE: Record<Metric, string> = {
+  top: 'Top working-set weight',
+  e1rm: '1RM · estimated from your sets',
+  reps: 'Most reps in a set',
+  time: 'Longest hold',
+}
+/** What can be charted depends on how the exercise is measured. */
+const METRICS: Record<Tracking, readonly { value: Metric; label: string }[]> = {
+  weight_reps: [
+    { value: 'top', label: 'Weight' },
+    { value: 'e1rm', label: '1RM' },
+  ],
+  reps: [{ value: 'reps', label: 'Reps' }],
+  time: [{ value: 'time', label: 'Hold' }],
+}
 
 type Props = {
   exerciseId: string | null
@@ -56,8 +67,17 @@ export function ExerciseProgress({ exerciseId, onExercise, history, prs, unit, t
     () => (id ? exerciseSeries(id, history.workouts, history.exercises, history.sets, range, today) : []),
     [id, history, range, today],
   )
-  const values = points.map((p) => toDisplayWeight(metric === 'top' ? p.topWeightKg : p.e1rmKg, unit))
-  const format = (v: number) => `${Math.round(v * 10) / 10} ${weightLabel(unit)}`
+  const tracking = exercise ? trackingOf(exercise) : 'weight_reps'
+  const options = METRICS[tracking]
+  const active = options.find((o) => o.value === metric)?.value ?? options[0]!.value // a stale choice falls back to the exercise's first
+  const values = points.map((p) => {
+    if (active === 'reps') return p.topReps
+    if (active === 'time') return p.topSeconds
+    return toDisplayWeight(active === 'top' ? p.topWeightKg : p.e1rmKg, unit)
+  })
+  const format = (v: number) =>
+    active === 'time' ? formatHold(Math.round(v)) : active === 'reps' ? `${Math.round(v)} ${Math.round(v) === 1 ? 'rep' : 'reps'}` : `${Math.round(v * 10) / 10} ${weightLabel(unit)}`
+  const unitNote = active === 'top' || active === 'e1rm' ? ` (${weightLabel(unit)})` : ''
   const exercisePrs = prs.filter((p) => p.exercise_id === id)
 
   return (
@@ -78,12 +98,12 @@ export function ExerciseProgress({ exerciseId, onExercise, history, prs, unit, t
       {exercise && (
         <>
           <Card className="space-y-4 p-4">
-            <Segmented label="Metric" value={metric} options={METRICS} onChange={setMetric} />
-            <h2 className="text-sm font-semibold">{METRIC_TITLE[metric]}</h2>
+            {options.length > 1 && <Segmented label="Metric" value={active} options={options} onChange={setMetric} />}
+            <h2 className="text-sm font-semibold">{METRIC_TITLE[active]}</h2>
             {points.length ? (
               <>
                 <StatTiles values={values} format={format} />
-                <ProgressChart title={`${exercise.name}: ${METRIC_TITLE[metric]} (${weightLabel(unit)})`} points={points.map((p, i) => ({ date: p.date, value: values[i]! }))} format={format} />
+                <ProgressChart title={`${exercise.name}: ${METRIC_TITLE[active]}${unitNote}`} points={points.map((p, i) => ({ date: p.date, value: values[i]! }))} format={format} axisFormat={active === 'time' ? format : undefined} />
               </>
             ) : (
               <p className="flex flex-col items-center gap-2 py-10 text-center text-sm text-muted-foreground">
@@ -107,6 +127,7 @@ export function ExerciseProgress({ exerciseId, onExercise, history, prs, unit, t
             key={logPr.key}
             exerciseId={exercise.id}
             exerciseName={exercise.name}
+            tracking={tracking}
             pr={editing ?? undefined}
             allPrs={prs}
             unit={unit}

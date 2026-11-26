@@ -1,8 +1,17 @@
+import type { Tracking } from './tracking'
 import type { PreviousSet, Session } from './workoutSession'
 
 type WorkoutRef = { id: string; started_at: string }
 type ExerciseRef = { id: string; workout_id: string; exercise_id: string; position: number }
-type SetRef = { id: string; workout_exercise_id: string; set_number: number; weight_kg: number; reps: number; is_warmup: boolean }
+type SetRef = {
+  id: string
+  workout_exercise_id: string
+  set_number: number
+  weight_kg: number
+  reps: number
+  duration_seconds?: number | null
+  is_warmup: boolean
+}
 
 export type PreviousSession = { workoutId: string; startedAt: string; sets: PreviousSet[] }
 
@@ -32,14 +41,22 @@ export function previousPerformance(
     result.set(exerciseId, {
       workoutId: ref.workout_id,
       startedAt: at,
-      sets: rows.map((s) => ({ weightKg: s.weight_kg, reps: s.reps, isWarmup: s.is_warmup })),
+      sets: rows.map((s) => ({ weightKg: s.weight_kg, reps: s.reps, durationSeconds: s.duration_seconds ?? null, isWarmup: s.is_warmup })),
     })
   }
   return result
 }
 
-/** A saved workout as an editable session; every row counts as logged. */
-export function sessionFromRows(exercises: readonly ExerciseRef[], sets: readonly SetRef[], notes: string | null): Session {
+/**
+ * A saved workout as an editable session; every row counts as logged. `trackingOf` says how each
+ * exercise is measured (stored values are kept as they were, even ones no longer shown).
+ */
+export function sessionFromRows(
+  exercises: readonly ExerciseRef[],
+  sets: readonly SetRef[],
+  notes: string | null,
+  trackingOf: (exerciseId: string) => Tracking = () => 'weight_reps',
+): Session {
   return {
     notes: notes ?? '',
     exercises: [...exercises]
@@ -47,15 +64,16 @@ export function sessionFromRows(exercises: readonly ExerciseRef[], sets: readonl
       .map((e) => ({
         id: e.id,
         exerciseId: e.exercise_id,
+        tracking: trackingOf(e.exercise_id),
         sets: sets
           .filter((s) => s.workout_exercise_id === e.id)
           .sort((a, b) => a.set_number - b.set_number)
-          .map((s) => ({ id: s.id, weightKg: s.weight_kg, reps: s.reps, isWarmup: s.is_warmup, done: true, loggedAt: null })),
+          .map((s) => ({ id: s.id, weightKg: s.weight_kg, reps: s.reps, durationSeconds: s.duration_seconds ?? null, isWarmup: s.is_warmup, done: true, loggedAt: null })),
       })),
   }
 }
 
-type SetPatch = Partial<Pick<SetRef, 'set_number' | 'weight_kg' | 'reps' | 'is_warmup'>>
+type SetPatch = Partial<Pick<SetRef, 'set_number' | 'weight_kg' | 'reps' | 'duration_seconds' | 'is_warmup'>>
 
 /**
  * WK-10: row-level changes that turn the saved workout into the edited draft. Exercises left with
@@ -85,14 +103,21 @@ export function diffWorkout(exercises: readonly ExerciseRef[], sets: readonly Se
     if (old) for (const s of sets) if (s.workout_exercise_id === e.id && !draftIds.has(s.id)) ops.removeSets.push(s.id)
 
     e.sets.forEach((s, i) => {
-      const next = { set_number: i + 1, weight_kg: s.weightKg ?? 0, reps: s.reps ?? 0, is_warmup: s.isWarmup }
+      const timed = e.tracking === 'time'
+      const next = {
+        set_number: i + 1,
+        weight_kg: s.weightKg ?? 0,
+        reps: timed ? 1 : (s.reps ?? 0), // a timed hold is stored as one rep with its duration
+        ...(timed ? { duration_seconds: s.durationSeconds ?? 0 } : {}),
+        is_warmup: s.isWarmup,
+      }
       const prev = oldSets.get(s.id)
       if (!prev) {
         ops.insertSets.push({ id: s.id, workout_exercise_id: e.id, ...next })
         return
       }
       const changes: SetPatch = {}
-      for (const k of Object.keys(next) as (keyof typeof next)[]) if (prev[k] !== next[k]) Object.assign(changes, { [k]: next[k] })
+      for (const k of Object.keys(next) as (keyof typeof next)[]) if ((prev as Record<string, unknown>)[k] !== next[k]) Object.assign(changes, { [k]: next[k] })
       if (Object.keys(changes).length) ops.patchSets.push({ id: s.id, changes })
     })
   })

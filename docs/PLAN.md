@@ -615,6 +615,15 @@ The PRD's Phase 3 (gamification, expanded nutrition) stays out of v1. This phase
 | Calendar cells at 320 px | About 39 px (44 px from 360 px wide). Above WCAG's 24 px minimum. |
 
 **Resolved after Phase 3:**
+- **Bodyweight and timed exercises (Nov 26):** how an exercise is measured comes from `trackingOf()` (`src/domain/tracking.ts`).
+  - Every `bodyweight` exercise, custom ones included, is **reps only**: no weight box, weight stored as 0.
+  - **Dead Hang** is **time**: a `m:ss` box (plain "45" means seconds, up to 1 hour). The list lives in `TIMED_EXERCISE_IDS`; adding Plank or Side Plank there times them too.
+  - Everything else stays weight × reps.
+  - **Storage** (migration `20261202…01_timed_sets`): `set_logs.duration_seconds` and `personal_records.duration_seconds`. A hold is stored as **one rep plus its duration**, so reps stays a required positive number everywhere. A check ties duration to `reps = 1`. The column is only sent on timed sets, so normal sets still sync before the migration is pushed.
+  - **PRs:** bodyweight exercises log "most reps" (weight 0); timed ones log a new `longest_hold` type.
+  - **Progress** charts follow the exercise: weight and 1RM, or best reps, or longest hold.
+  - **History:** old rows still read sensibly. Weight on a now reps-only exercise is kept but hidden; an old Dead Hang logged as reps shows as reps.
+  - **`src/types/database.ts`** was hand-updated to match the migration. Run `npm run db:types` after pushing; the drift guard checks the two agree.
 - **Longest streak on Home (Nov 26):** a card under the streak and month tiles shows the best run ever, with its first and last workout dates, and a "Current" badge when it's the run you're on. `longestStreak()` in `src/domain/streak.ts` uses the same rule as `computeStreak` (scheduled rest days bridge without counting; ties go to the most recent run). It uses the active split's rest days for all history, so switching splits can change old streaks. Hidden until you have a workout.
 - **Volume removed everywhere (Nov 26):** the user dropped volume (Σ weight × reps), overriding WK-7 and the PRD's Volume chart. The workout summary shows duration, exercises and sets. Progress charts top weight and 1RM. History rows show duration and sets. `workout_completed` events no longer carry a volume figure.
 - **Rest days (A5):** a scheduled rest day of the active split bridges the streak without counting. A rest-day workout counts. Today being a rest day shows "streak safe".

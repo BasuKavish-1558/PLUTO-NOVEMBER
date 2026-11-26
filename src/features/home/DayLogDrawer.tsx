@@ -2,7 +2,8 @@ import { ChevronRight, Clock } from 'lucide-react'
 import { Link } from 'react-router'
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
 import { parseLocalDate, type LocalDate } from '@/domain/dates'
-import { formatWeight, type WeightUnit } from '@/domain/units'
+import { formatSetText, trackingOf } from '@/domain/tracking'
+import type { WeightUnit } from '@/domain/units'
 import { formatDuration } from '@/domain/workoutStats'
 import { useExerciseMap } from '@/features/library/queries'
 import { useProfile } from '@/features/profile/queries'
@@ -58,21 +59,25 @@ function WorkoutLog({ detail, unit }: { detail: WorkoutDetail; unit: WeightUnit 
         </span>
       </Link>
       <ul className="divide-y rounded-xl border">
-        {detail.exercises.map((ex) => (
+        {detail.exercises.map((ex) => {
+          const exercise = names.get(ex.exercise_id)
+          const tracking = exercise ? trackingOf(exercise) : 'weight_reps'
+          return (
           <li key={ex.id} className="px-4 py-3">
-            <p className="text-sm font-medium">{names.get(ex.exercise_id)?.name ?? 'Exercise'}</p>
+            <p className="text-sm font-medium">{exercise?.name ?? 'Exercise'}</p>
             <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm tabular-nums text-muted-foreground">
               {detail.sets
                 .filter((s) => s.workout_exercise_id === ex.id)
                 .map((s) => (
                   <span key={s.id} className={s.is_warmup ? 'opacity-60' : undefined}>
                     {s.is_warmup && 'W '}
-                    {s.weight_kg ? formatWeight(s.weight_kg, unit) : 'BW'} × {s.reps}
+                    {formatSetText(s, tracking, unit)}
                   </span>
                 ))}
             </p>
           </li>
-        ))}
+          )
+        })}
       </ul>
       {workout.notes && <p className="text-sm whitespace-pre-wrap text-muted-foreground">{workout.notes}</p>}
     </section>

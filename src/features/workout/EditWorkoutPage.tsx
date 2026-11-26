@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { BackLink } from '@/components/layout/BackLink'
@@ -8,7 +8,9 @@ import { Button } from '@/components/ui/button'
 import { saveWorkoutEdits } from '@/data/repos/workouts'
 import { diffWorkout, sessionFromRows } from '@/domain/workoutHistory'
 import { addExercise, canLog, withoutEmptySets, type Session } from '@/domain/workoutSession'
-import { useExerciseMap } from '@/features/library/queries'
+import { useLibrary } from '@/features/library/queries'
+import type { Exercise } from '@/domain/library'
+import { trackingOf } from '@/domain/tracking'
 import { useProfile } from '@/features/profile/queries'
 import { ExercisePickerDrawer } from '@/features/split/ExercisePickerDrawer'
 import { ExerciseCard } from './ExerciseCard'
@@ -19,17 +21,24 @@ import { PageSkeleton } from '@/components/ui/skeleton'
 export function EditWorkoutPage() {
   const { workoutId } = useParams()
   const detail = useWorkoutDetail(workoutId)
+  const library = useLibrary() // each exercise's tracking comes from it, so wait until it is ready
+  const exercises = useMemo(() => new Map((library ?? []).map((e) => [e.id, e])), [library])
   if (detail === null) return <Navigate to="/workout" replace />
-  if (!detail) return <PageSkeleton />
-  return <Editor key={detail.workout.id} detail={detail} />
+  if (!detail || !library) return <PageSkeleton />
+  // Handed down as a prop: another useLibrary() call would start empty and misread every exercise.
+  return <Editor key={detail.workout.id} detail={detail} exercises={exercises} />
 }
 
 /** WK-10: the logger without a timer; every row counts as logged. */
-function Editor({ detail }: { detail: WorkoutDetail }) {
+function Editor({ detail, exercises }: { detail: WorkoutDetail; exercises: Map<string, Exercise> }) {
   const navigate = useNavigate()
-  const exercises = useExerciseMap()
   const unit = useProfile()?.weight_unit ?? 'kg'
-  const [draft, setDraft] = useState<Session>(() => sessionFromRows(detail.exercises, detail.sets, detail.workout.notes))
+  const [draft, setDraft] = useState<Session>(() =>
+    sessionFromRows(detail.exercises, detail.sets, detail.workout.notes, (id) => {
+      const exercise = exercises.get(id)
+      return exercise ? trackingOf(exercise) : 'weight_reps'
+    }),
+  )
   const previous = usePreviousPerformance(draft.exercises.map((e) => e.exerciseId), detail.workout.id)
   const picker = useSheet()
   const [busy, setBusy] = useState(false)
@@ -37,8 +46,8 @@ function Editor({ detail }: { detail: WorkoutDetail }) {
 
   async function save() {
     const kept = withoutEmptySets(draft) // blank rows are ignored, not errors
-    if (kept.exercises.some((e) => e.sets.some((s) => !canLog(s)))) {
-      return toast.error('A set with a weight needs a rep count. Fill it in or remove the set.')
+    if (kept.exercises.some((e) => e.sets.some((s) => !canLog(s, e.tracking)))) {
+      return toast.error('Every set needs its reps (or its time). Fill it in or remove the set.')
     }
     setBusy(true)
     await saveWorkoutEdits(detail.workout, diffWorkout(detail.exercises, detail.sets, kept), draft.notes)
@@ -83,7 +92,8 @@ function Editor({ detail }: { detail: WorkoutDetail }) {
             addExercise(d, {
               id: crypto.randomUUID(),
               exerciseId: ex.id,
-              sets: [{ id: crypto.randomUUID(), weightKg: null, reps: null, isWarmup: false, done: true, loggedAt: null }],
+              tracking: trackingOf(ex),
+              sets: [{ id: crypto.randomUUID(), weightKg: null, reps: null, durationSeconds: null, isWarmup: false, done: true, loggedAt: null }],
             }),
           )
         }

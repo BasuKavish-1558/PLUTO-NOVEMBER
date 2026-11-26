@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import type { SplitDayExercise } from '@/data/db'
 import { addToDay, updateDay } from '@/data/repos/splits'
+import { trackingOf } from '@/domain/tracking'
 import { useExerciseMap } from '@/features/library/queries'
 import { DayExerciseList } from './DayExerciseList'
 import { ExercisePickerDrawer } from './ExercisePickerDrawer'
@@ -108,6 +109,7 @@ function DayEditor({ splitId, splitName, day }: { splitId: string; splitName: st
           key={targets.key}
           item={editing}
           name={exercises.get(editing.exercise_id)?.name ?? 'Exercise'}
+          tracking={trackingOf(exercises.get(editing.exercise_id) ?? { id: editing.exercise_id, equipment: 'barbell' })}
           open={targets.open}
           onOpenChange={targets.onOpenChange}
         />

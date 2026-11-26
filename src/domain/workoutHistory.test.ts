@@ -28,8 +28,8 @@ describe('previousPerformance', () => {
       workoutId: 'w2',
       startedAt: '2026-11-20T17:00:00.000Z',
       sets: [
-        { weightKg: 40, reps: 10, isWarmup: true },
-        { weightKg: 80, reps: 6, isWarmup: false },
+        { weightKg: 40, reps: 10, durationSeconds: null, isWarmup: true },
+        { weightKg: 80, reps: 6, durationSeconds: null, isWarmup: false },
       ],
     })
     expect(prev.get('squat')?.workoutId).toBe('w3')

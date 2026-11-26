@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable, type Table } from 'dexie'
 import type { Exercise } from '@/domain/library'
+import type { PrType } from '@/domain/personalRecords'
 import type { BackgroundId } from '@/lib/backgrounds'
 import type { LengthUnit, WeightUnit } from '@/domain/units'
 import type { ActiveWorkout } from '@/domain/workoutSession'
@@ -80,8 +81,10 @@ export type SetLog = {
   user_id: string
   workout_exercise_id: string
   set_number: number
-  weight_kg: number // added load
-  reps: number
+  weight_kg: number // added load; always 0 for reps-only and timed exercises
+  reps: number // a timed hold is stored as 1 rep
+  /** Length of a timed hold. Absent (not null) on other sets, so they sync before the column exists. */
+  duration_seconds?: number | null
   is_warmup: boolean
 } & Stamped
 
@@ -117,9 +120,10 @@ export type PersonalRecord = {
   id: string
   user_id: string
   exercise_id: string
-  type: 'heaviest_weight' | 'most_reps_at_weight'
+  type: PrType
   weight_kg: number
   reps: number
+  duration_seconds?: number | null // longest_hold only
   note: string | null
   photo_path: string | null
   workout_id: string | null

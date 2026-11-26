@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import seedSql from '../../supabase/migrations/20261125000002_seed_exercises.sql?raw'
+import { trackingOf } from '@/domain/tracking'
 import { BUILTIN_EXERCISES } from './library/builtinExercises'
 import { buildCustomRows, buildPresetRows, PRESETS } from './presets'
 
@@ -17,6 +18,21 @@ describe('built-in library', () => {
     const sql = seedSql
     for (const e of BUILTIN_EXERCISES) expect(sql).toContain(`('${e.id}', '${e.name.replace(/'/g, "''")}',`)
     expect(sql.match(/^ {2}\('/gm)).toHaveLength(BUILTIN_EXERCISES.length)
+  })
+})
+
+describe('how built-in exercises are measured', () => {
+  const tracking = Object.fromEntries(BUILTIN_EXERCISES.map((e) => [e.name, trackingOf(e)]))
+
+  it('Dead Hang is timed (its id in domain/tracking.ts matches the built-in)', () => {
+    expect(tracking['Dead Hang']).toBe('time')
+  })
+
+  it('every other bodyweight exercise is reps only, and nothing with equipment is', () => {
+    const bodyweight = BUILTIN_EXERCISES.filter((e) => e.equipment === 'bodyweight' && e.name !== 'Dead Hang')
+    expect(bodyweight.length).toBeGreaterThan(20)
+    for (const e of bodyweight) expect(tracking[e.name], e.name).toBe('reps')
+    for (const e of BUILTIN_EXERCISES.filter((e) => e.equipment !== 'bodyweight')) expect(tracking[e.name], e.name).toBe('weight_reps')
   })
 })
 

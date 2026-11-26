@@ -3,6 +3,7 @@ import { diffWorkout, previousPerformance, type PreviousSession } from '@/domain
 import { finishedRows, initialSets, type ActiveWorkout, type Targets } from '@/domain/workoutSession'
 import { summarizeWorkout } from '@/domain/workoutStats'
 import { db, type Workout } from '../db'
+import { loadTracking } from '../library/tracking'
 import { commit } from './write'
 
 /** WK-5: last session's sets per exercise, read from local history (works offline). */
@@ -23,7 +24,8 @@ export type StartPlan = {
 
 /** WK-1: a split day's exercises pre-filled from last session, or an empty ad hoc workout. */
 export async function startWorkout(plan: StartPlan, now = Date.now()): Promise<ActiveWorkout> {
-  const previous = await loadPrevious(plan.items.map((i) => i.exerciseId))
+  const ids = plan.items.map((i) => i.exerciseId)
+  const [previous, tracking] = await Promise.all([loadPrevious(ids), loadTracking(ids)])
   const uuid = () => crypto.randomUUID()
   const workout: ActiveWorkout = {
     id: uuid(),
@@ -33,11 +35,10 @@ export async function startWorkout(plan: StartPlan, now = Date.now()): Promise<A
     localDate: toLocalDate(new Date(now)),
     notes: '',
     timer: { startedAt: now, pausedAt: null, pausedMs: 0 },
-    exercises: plan.items.map((i) => ({
-      id: uuid(),
-      exerciseId: i.exerciseId,
-      sets: initialSets(previous.get(i.exerciseId)?.sets, i.targets, uuid),
-    })),
+    exercises: plan.items.map((i) => {
+      const how = tracking.get(i.exerciseId) ?? 'weight_reps'
+      return { id: uuid(), exerciseId: i.exerciseId, tracking: how, sets: initialSets(how, previous.get(i.exerciseId)?.sets, i.targets, uuid) }
+    }),
   }
   await saveActive(workout)
   return workout
@@ -45,9 +46,19 @@ export async function startWorkout(plan: StartPlan, now = Date.now()): Promise<A
 
 /** WK-9: called on every change so the workout survives a crash or a closed tab. */
 export const saveActive = (workout: ActiveWorkout) => db.activeWorkout.put({ key: 'current', workout })
+/** A workout saved before reps-only and timed exercises existed has no tracking or time on its rows. */
+const upgrade = (w: ActiveWorkout): ActiveWorkout => ({
+  ...w,
+  exercises: w.exercises.map((e) => ({
+    ...e,
+    tracking: e.tracking ?? 'weight_reps',
+    sets: e.sets.map((s) => ({ ...s, durationSeconds: s.durationSeconds ?? null })),
+  })),
+})
+
 export const loadActive = async (userId: string) => {
   const record = await db.activeWorkout.get('current')
-  return record?.workout.userId === userId ? record.workout : null
+  return record?.workout.userId === userId ? upgrade(record.workout) : null
 }
 export const discardActive = () => db.activeWorkout.delete('current')
 
@@ -67,7 +78,12 @@ export async function finishWorkout(active: ActiveWorkout, now = Date.now()) {
     for (const { loggedAt, ...s } of sets) {
       await w.insert('set_logs', s)
       const exerciseId = exercises.find((e) => e.id === s.workout_exercise_id)!.exercise_id
-      await w.event(active.userId, 'set_logged', { workout_id: workout.id, set_log_id: s.id, exercise_id: exerciseId, weight_kg: s.weight_kg, reps: s.reps, is_warmup: s.is_warmup }, loggedAt)
+      await w.event(
+        active.userId,
+        'set_logged',
+        { workout_id: workout.id, set_log_id: s.id, exercise_id: exerciseId, weight_kg: s.weight_kg, reps: s.reps, ...(s.duration_seconds ? { duration_seconds: s.duration_seconds } : {}), is_warmup: s.is_warmup },
+        loggedAt,
+      )
     }
     // Mid-workout PRs were saved without a workout (it didn't exist on the server yet); link them now.
     for (const prId of active.prIds ?? []) if (await db.personal_records.get(prId)) await w.patch('personal_records', prId, { workout_id: workout.id })
