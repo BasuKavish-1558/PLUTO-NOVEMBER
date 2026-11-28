@@ -4,12 +4,13 @@ import { commit, type Writer } from './write'
 
 /**
  * NT-5: the user only ever sets a multiplier (a goal type pre-fills it). Changes take effect from
- * `today`; a second change on the same day replaces that day's row (unique per effective_from).
+ * `from` (today, or a past day the user forgot to update) until the next change; a second change
+ * on the same day replaces that day's row (unique per effective_from).
  */
-export function setProteinGoal(userId: string, multiplier: number, goalType: GoalType | null, today: string) {
+export function setProteinGoal(userId: string, multiplier: number, goalType: GoalType | null, from: string) {
   return commit(async (w) => {
     const existing = (await db.nutrition_goals.where('user_id').equals(userId).toArray()).find(
-      (g) => g.nutrient === 'protein' && g.effective_from === today,
+      (g) => g.nutrient === 'protein' && g.effective_from === from,
     )
     if (existing) return w.patch('nutrition_goals', existing.id, { multiplier, goal_type: goalType })
     await w.insert('nutrition_goals', {
@@ -20,7 +21,7 @@ export function setProteinGoal(userId: string, multiplier: number, goalType: Goa
       multiplier,
       target: null,
       goal_type: goalType,
-      effective_from: today,
+      effective_from: from,
     })
   })
 }
@@ -59,7 +60,33 @@ export function addProtein(userId: string, amount: number, label: string | null,
   })
 }
 
-export const deleteEntry = (id: string) => commit((w) => w.remove('nutrition_entries', id))
+/**
+ * History → Edit: fill in a day the user forgot to log. Refuses ('already_logged') a day that
+ * already has protein entries, so a missed day can't double-count; that day is edited in place instead.
+ */
+export function logMissedDay(userId: string, amount: number, label: string | null, date: string, now = new Date()) {
+  return commit(async (w) => {
+    const before = (await proteinOn(userId, date)).total
+    const hasEntries = await db.nutrition_entries
+      .where('local_date')
+      .equals(date)
+      .filter((e) => e.user_id === userId && e.nutrient === 'protein')
+      .count()
+    if (hasEntries) return 'already_logged' as const
+    await w.insert('nutrition_entries', {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      local_date: date,
+      nutrient: 'protein',
+      amount: Math.round(amount * 10) / 10,
+      label: label?.trim() || null,
+    })
+    await maybeGoalMet(w, userId, date, before, now)
+    return 'ok' as const
+  })
+}
+
+export const deleteEntry =(id: string) => commit((w) => w.remove('nutrition_entries', id))
 
 /** Undo for deleteEntry: same id, so other devices converge. */
 export const restoreEntry = (e: NutritionEntry) =>

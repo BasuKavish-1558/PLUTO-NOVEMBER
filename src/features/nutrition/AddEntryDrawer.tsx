@@ -9,10 +9,10 @@ import { useUser } from '@/stores/session'
 const MAX_LABEL = 60
 const MAX_AMOUNT = 1000
 
-type Props = { date: string; open: boolean; onOpenChange: (open: boolean) => void }
+type Props = { date: string; title?: string; open: boolean; onOpenChange: (open: boolean) => void }
 
 /** NT-2: grams eaten plus an optional label. (These are intake grams, not the goal; the goal is never typed.) */
-export function AddEntryDrawer({ date, open, onOpenChange }: Props) {
+export function AddEntryDrawer({ date, title = 'Add protein', open, onOpenChange }: Props) {
   const { userId } = useUser()
   const [amount, setAmount] = useState('')
   const [label, setLabel] = useState('')
@@ -27,7 +27,7 @@ export function AddEntryDrawer({ date, open, onOpenChange }: Props) {
   }
 
   return (
-    <FormDrawer open={open} onOpenChange={onOpenChange} title="Add protein" submitLabel="Add" onSubmit={save}>
+    <FormDrawer open={open} onOpenChange={onOpenChange} title={title} submitLabel="Add" onSubmit={save}>
       <Field label="Protein" htmlFor="entry-amount" error={error}>
         <div className="relative">
           <Input

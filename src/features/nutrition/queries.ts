@@ -35,7 +35,6 @@ export function useProtein(today: string) {
       total: dailyTotal(entries, today),
       todayEntries: byNewest.filter((e) => e.local_date === today),
       history: dailyTotals(entries).map((d) => ({ ...d, goal: proteinGoalFor(d.date, goals, weights)?.grams ?? null })),
-      entriesOn: (date: string): NutritionEntry[] => byNewest.filter((e) => e.local_date === date),
       quick: recentQuickItems(byNewest),
     }
   }, [data, today])

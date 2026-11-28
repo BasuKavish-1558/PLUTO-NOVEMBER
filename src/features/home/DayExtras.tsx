@@ -18,11 +18,14 @@ export function DayProtein({ date }: { date: LocalDate }) {
 
   return (
     <section className="space-y-2">
-      <h3 className="flex items-baseline justify-between text-sm font-semibold">
+      <h3 className="flex items-baseline justify-between gap-2 text-sm font-semibold">
         Protein
-        <span className="font-normal text-muted-foreground tabular-nums">
+        <span className="ml-auto font-normal text-muted-foreground tabular-nums">
           {total} g{goal ? ` of ${goal.grams} g` : ''}
         </span>
+        <Link to={`/nutrition?date=${date}`} className="inline-flex min-h-11 items-center font-medium text-primary" aria-label="Edit protein for this day">
+          Edit
+        </Link>
       </h3>
       {goal && (
         <div className="h-2 overflow-hidden rounded-full bg-cell" role="img" aria-label={`${total} of ${goal.grams} grams of protein`}>

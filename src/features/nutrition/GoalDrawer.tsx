@@ -9,7 +9,16 @@ import { clampMultiplier, GOAL_PRESETS, MULTIPLIER_RANGE, type GoalType, type Pr
 import { formatWeight, type WeightUnit } from '@/domain/units'
 import { useUser } from '@/stores/session'
 
-type Props = { goal: ProteinGoal; unit: WeightUnit; today: string; open: boolean; onOpenChange: (open: boolean) => void }
+type Props = {
+  goal: ProteinGoal
+  unit: WeightUnit
+  /** The day the change takes effect: today, or a past day picked on Nutrition. */
+  from: string
+  /** "Tue, Nov 24" when backdating; null for today. */
+  fromLabel: string | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
 
 const TYPES = [
   { value: 'cut', label: 'Cut' },
@@ -18,7 +27,7 @@ const TYPES = [
 ] as const
 
 /** NT-5: pick a goal type (pre-fills a multiplier) and adjust the multiplier. Grams are only ever shown. */
-export function GoalDrawer({ goal, unit, today, open, onOpenChange }: Props) {
+export function GoalDrawer({ goal, unit, from, fromLabel, open, onOpenChange }: Props) {
   const { userId } = useUser()
   const [type, setType] = useState<GoalType | null>(goal.goalType)
   const [multiplier, setMultiplier] = useState(goal.multiplier)
@@ -28,13 +37,13 @@ export function GoalDrawer({ goal, unit, today, open, onOpenChange }: Props) {
   const nudge = (d: number) => setMultiplier((m) => clampMultiplier(m + d))
 
   async function save() {
-    await setProteinGoal(userId, multiplier, type, today)
-    toast.success(`Daily goal: ${grams} g`)
+    await setProteinGoal(userId, multiplier, type, from)
+    toast.success(`Daily goal: ${grams} g${fromLabel ? ` from ${fromLabel}` : ''}`)
     onOpenChange(false)
   }
 
   return (
-    <FormDrawer open={open} onOpenChange={onOpenChange} title="Protein goal" description="Your goal follows your body weight." submitLabel="Save goal" onSubmit={save}>
+    <FormDrawer open={open} onOpenChange={onOpenChange} title="Protein goal" description={fromLabel ? `Applies from ${fromLabel} onward, until a later change.` : 'Your goal follows your body weight.'} submitLabel="Save goal" onSubmit={save}>
       <Segmented
         label="Goal type"
         value={type}
